@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.852
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3DViewer", "3DViewer\3DViewer.vcxproj", "{516FC0A6-F6BC-4A4F-BFA3-B35F73E3B75C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{516FC0A6-F6BC-4A4F-BFA3-B35F73E3B75C}.Debug|x64.ActiveCfg = Debug|x64
+		{516FC0A6-F6BC-4A4F-BFA3-B35F73E3B75C}.Debug|x64.Build.0 = Debug|x64
+		{516FC0A6-F6BC-4A4F-BFA3-B35F73E3B75C}.Debug|x86.ActiveCfg = Debug|Win32
+		{516FC0A6-F6BC-4A4F-BFA3-B35F73E3B75C}.Debug|x86.Build.0 = Debug|Win32
+		{516FC0A6-F6BC-4A4F-BFA3-B35F73E3B75C}.Release|x64.ActiveCfg = Release|x64
+		{516FC0A6-F6BC-4A4F-BFA3-B35F73E3B75C}.Release|x64.Build.0 = Release|x64
+		{516FC0A6-F6BC-4A4F-BFA3-B35F73E3B75C}.Release|x86.ActiveCfg = Release|Win32
+		{516FC0A6-F6BC-4A4F-BFA3-B35F73E3B75C}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D835103F-C0CA-47A8-84F0-A2EAD73DB655}
+	EndGlobalSection
+EndGlobal
