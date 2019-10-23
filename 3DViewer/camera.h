@@ -23,7 +23,7 @@ constexpr auto PI = 3.141592653;
 
 // 相机参数
 const float SENSITIVITY = 0.005f;
-const float ZOOM = 45.0f;
+const float ZOOM = 25.0f;
 
 class Camera {
 public:
@@ -129,10 +129,10 @@ public:
 	// 鼠标滚轮事件响应函数（改变相机距观察点距离）
 	void ProcessMouseScroll(float yoffset)
 	{
-		if (Zoom >= 1.0f && Zoom <= 45.0f)
+		if (Zoom >= 0.1f && Zoom <= 45.0f)
 			Zoom -= yoffset;
-		if (Zoom <= 1.0f)
-			Zoom = 1.0f;
+		if (Zoom <= 0.1f)
+			Zoom = 0.1f;
 		if (Zoom >= 45.0f)
 			Zoom = 45.0f;
 	}

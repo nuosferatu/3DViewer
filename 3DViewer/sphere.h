@@ -31,7 +31,7 @@ public:
 		sphere_center = glm::vec3(0.0f, 0.0f, 0.0f);
 		sphere_radius_squared = 1.0f;
 
-		model_shape = new Model("shapes/sphere.obj");
+		model_shape = new Model("shapes/sphere_face.obj");
 
 		selected = FALSE;
 	}

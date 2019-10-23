@@ -31,7 +31,8 @@ public:
 		plane_n = glm::vec3(0.0f, 1.0f, 0.0f);
 		plane_c = 1.0f;
 
-		model_shape = new Model("shapes/plane.obj");
+		//model_shape = new Model("shapes/plane.obj");
+		model_shape = new Model("shapes/plane_face.obj");
 
 		selected = FALSE;
 	}

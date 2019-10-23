@@ -29,12 +29,14 @@
 #include "cone.h"
 #include "sphere.h"
 #include "plane.h"
+#include "spfn_shpes.h"
 #include "resource.h"
 
 // std
 #include <Windows.h>
 #include <iostream>
 #include <vector>
+#include <math.h>
 
 
 
@@ -63,7 +65,7 @@ bool enableModelAxis = FALSE;
 int current = 0;
 bool enableMouseMiddleMovement = FALSE;
 
-vector<Primitives*> shapes;
+vector<Primitives> shapes;
 unsigned int highlight = 0;
 
 enum interactionStyle {
@@ -271,9 +273,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		highlight++;
 		current = highlight % shapes.size();
 		for (unsigned int s = 0; s < shapes.size(); s++) {
-			shapes[s]->selected = FALSE;
+			shapes[s].selected = FALSE;
 		}
-		shapes[current]->selected = TRUE;
+		shapes[current].selected = TRUE;
 		break;
 
 	case GLFW_KEY_X: // 'X': 切换坐标轴显示与否
@@ -372,7 +374,7 @@ void initAxis()
 		1, 4, 4,
 		2, 5, 5
 	};
-	Vertex vertex;
+	Vertex vertex(glm::vec3(0.0f, 0.0f, 0.0f));
 	vector<Vertex> vertices;
 	glm::vec3 vec;
 	for (unsigned int i = 0; i < sizeof(axis_points) / sizeof(axis_points[0]) / 2 / 3; i++) {
@@ -566,6 +568,8 @@ void drawFloor()
 	glBindVertexArray(0);
 }
 
+
+
 //------------------------------  主函数  ------------------------------
 
 int main() {
@@ -595,27 +599,141 @@ int main() {
 
 	// 加载模型
 	Model floor("floor/c.obj");
-	Cylinder cylinder;
-	cylinder.rotate(1.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-	cylinder.scale(glm::vec3(2.0f, 2.0f, 2.0f));
-	cylinder.translate(glm::vec3(0.0f, 2.0f, 0.0f));
-	cylinder.selected = TRUE;
-	shapes.push_back(&cylinder);
-	Cone cone;
+	//Cylinder cylinder;
+	//cylinder.scale(glm::vec3(1.0f, 1.0f, 1.0f));
+	//cylinder.rotate(1.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+	//cylinder.translate(glm::vec3(0.0f, 2.0f, 0.0f));
+	//shapes.push_back(cylinder);
+	/*Cone cone;
 	cone.rotate(1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 	cone.scale(glm::vec3(2.0f, 2.0f, 2.0f));
 	cone.translate(glm::vec3(0.0f, 2.0f, 0.0f));
-	shapes.push_back(&cone);
-	Plane plane;
-	plane.rotate(1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	plane.scale(glm::vec3(2.0f, 2.0f, 2.0f));
-	plane.translate(glm::vec3(0.0f, -1.0f, 0.0f));
+	shapes.push_back(cone);*/
+	//Plane plane;
+	//plane.rotate(1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	//plane.scale(glm::vec3(2.0f, 2.0f, 2.0f));
+	//plane.translate(glm::vec3(0.0f, -1.0f, 0.0f));
 	//shapes.push_back(&plane);
-	Sphere sphere;
+	/*Sphere sphere;
 	sphere.rotate(1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 	sphere.scale(glm::vec3(2.0f, 2.0f, 2.0f));
 	sphere.translate(glm::vec3(0.0f, -2.0f, 0.0f));
-	shapes.push_back(&sphere);
+	shapes.push_back(sphere);*/
+
+
+
+	vector<SPFN_Shape> spfn_shapes;
+	vector<Vertex> point_list;
+	vector<unsigned int> point_indices;
+	vector<Texture> texture_coords;
+	importPointsFromFile("E:\\out.txt", point_list);
+	importShapeParasFromFile("E:\\sample.txt", spfn_shapes);
+	for (unsigned int k = 0; k < spfn_shapes.size(); k++) {
+		point_indices.insert(point_indices.end(), 
+			spfn_shapes[k].indices.begin(), 
+			spfn_shapes[k].indices.end());
+	}
+	Mesh point_set(point_list, point_indices, texture_coords);
+
+	for (unsigned int i = 0; i < spfn_shapes.size(); i++) {
+		//if (spfn_shapes[i].num < 600) {
+		//	continue;
+		//}
+		// cylinder
+		if (spfn_shapes[i].type == 2 && spfn_shapes[i].num > 600) {
+			Cylinder cylinder_temp;
+			// scale: radius_squared
+			float r, x, y, z;
+			x = spfn_shapes[i].paras[3];
+			y = spfn_shapes[i].paras[4];
+			z = spfn_shapes[i].paras[5];
+			cout << x << " " << y << " " << z << " " << endl;
+			cylinder_temp.rotate(cylinder_temp.cylinder_axis, glm::vec3(x, y, z));
+			cylinder_temp.cylinder_radius_squared = spfn_shapes[i].paras[6];
+			r = std::sqrtf(spfn_shapes[i].paras[6]);
+			cylinder_temp.scale(glm::vec3(r, 1.0f, r));
+			cout << r << endl;
+			// rotate: axis
+			
+			cylinder_temp.cylinder_axis = glm::vec3(x, y, z);
+			// translate: center
+			x = spfn_shapes[i].paras[0];
+			y = spfn_shapes[i].paras[1];
+			z = spfn_shapes[i].paras[2];
+			cout << x << " " << y << " " << z << endl;
+			cylinder_temp.translate(glm::vec3(x, y, z));
+			cylinder_temp.cylinder_center = glm::vec3(x, y, z);
+			shapes.push_back(cylinder_temp);
+			//cout << endl;
+		}
+		// cone
+		else if (spfn_shapes[i].type == 3 && spfn_shapes[i].num > 600) {
+			Cone cone_temp;
+			// scale: half_angle
+			float r, x, y, z;
+			cone_temp.cone_half_angle = spfn_shapes[i].paras[6];
+			r = std::sqrtf(spfn_shapes[i].paras[6]);
+			x = spfn_shapes[i].paras[3];
+			y = spfn_shapes[i].paras[4];
+			z = spfn_shapes[i].paras[5];
+			cone_temp.rotate(cone_temp.cone_axis, glm::vec3(x, y, z));
+			cone_temp.scale(glm::vec3(1.0f, r/2, 1.0f));
+			cout << r << endl;
+			// rotate: axis
+			
+			cout << x << " " << y << " " << z << " " << endl;
+			
+			cone_temp.cone_axis = glm::vec3(x, y, z);
+			// translate: apex
+			x = spfn_shapes[i].paras[0];
+			y = spfn_shapes[i].paras[1];
+			z = spfn_shapes[i].paras[2];
+			cout << x << " " << y << " " << z << endl;
+			//cone_temp.translate(glm::vec3(x, y, z));
+			cone_temp.cone_apex = glm::vec3(x, y, z);
+			shapes.push_back(cone_temp);
+			cout << endl;
+		}
+		// sphere
+		else if (spfn_shapes[i].type == 1 && spfn_shapes[i].num > 600) {
+			Sphere sphere_temp;
+			// scale: radius_squared
+			float r, x, y, z;
+			sphere_temp.sphere_radius_squared = spfn_shapes[i].paras[3];
+			r = std::sqrtf(spfn_shapes[i].paras[3]);
+			sphere_temp.scale(glm::vec3(r, r, r));
+			cout << r << endl;
+			// translate: center
+			x = spfn_shapes[i].paras[0];
+			y = spfn_shapes[i].paras[1];
+			z = spfn_shapes[i].paras[2];
+			cout << x << " " << y << " " << z << endl;
+			sphere_temp.translate(glm::vec3(x, y, z));
+			sphere_temp.sphere_center = glm::vec3(x, y, z);
+			shapes.push_back(sphere_temp);
+			cout << endl;
+		}
+		// plane
+		else if (spfn_shapes[i].type == 0 && spfn_shapes[i].num > 10) {
+			Plane plane_temp;
+			// rotate: n
+			float c, x, y, z;
+			x = spfn_shapes[i].paras[0];
+			y = spfn_shapes[i].paras[1];
+			z = spfn_shapes[i].paras[2];
+			cout << x << " " << y << " " << z << endl;
+			plane_temp.rotate(plane_temp.plane_n, glm::vec3(x, y, z));
+			plane_temp.plane_n = glm::vec3(x, y, z);
+			// translate: c
+			c = spfn_shapes[i].paras[3];
+			plane_temp.translate(glm::vec3(0.0f, c, 0.0f));
+			plane_temp.plane_c = spfn_shapes[i].paras[3];
+			cout << c << endl;
+			shapes.push_back(plane_temp);
+			cout << endl;
+		}
+	}
+	
 
 
 	// Setup Dear ImGui context
@@ -626,7 +744,7 @@ int main() {
 	// Setup Platform/Renderer bindings
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init(glsl_version);
-
+	
 
 	
 	initAxis();
@@ -695,15 +813,19 @@ int main() {
 		basicShapeShader->setVec3("light.position", 0.0f, 30.0f, 4.0f);
 		basicShapeShader->setVec3("light.ambient", 0.24f, 0.24f, 0.24f);
 		basicShapeShader->setVec3("light.diffuse", 0.8f, 0.8f, 0.8f);
-		basicShapeShader->setVec3("light.specular", 0.0f, 0.0f, 0.0f);
+		basicShapeShader->setVec3("light.specular", 0.8f, 0.8f, 0.8f);
 		//basicShapeShader->setFloat("light.constant", 1.0f);
 		//basicShapeShader.setFloat("light.linear", 0.09f);
 		//basicShapeShader.setFloat("light.quadratic", 0.032f);
 		basicShapeShader->setVec3("viewPos", camera.Position);
-		basicShapeShader->setVec3("material.ambient", 0.5f, 0.5f, 0.5f);
-		basicShapeShader->setVec3("material.diffuse", 0.5f, 0.5f, 0.5f);
-		basicShapeShader->setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+		basicShapeShader->setVec3("material.ambient", 0.4f, 0.4f, 0.4f);
+		basicShapeShader->setVec3("material.diffuse", 0.3f, 0.3f, 0.3f);
+		basicShapeShader->setVec3("material.specular", 0.0f, 0.0f, 0.0f);
 		basicShapeShader->setFloat("material.shininess", 64.0f);
+		basicShapeShader->setVec3("material2.ambient", 1.0f, 1.0f, 1.0f);
+		basicShapeShader->setVec3("material2.diffuse", 1.0f, 1.0f, 1.0f);
+		basicShapeShader->setVec3("material2.specular", 0.0f, 0.0f, 0.0f);
+		basicShapeShader->setFloat("material2.shininess", 64.0f);
 
 
 		for (unsigned int s = 0; s < shapes.size(); s++) {
@@ -711,44 +833,90 @@ int main() {
 			
 			glPolygonMode(GL_FRONT_AND_BACK, displayMode);
 			if (displayMode == GL_FILL) {
-				basicShapeShader->setMat4("model", shapes[s]->model_shape->model);
-				basicShapeShader->setBool("selected", shapes[s]->selected);
-				shapes[s]->model_shape->Draw(basicShapeShader, 0);
+				basicShapeShader->setMat4("model", shapes[s].model_shape->model);
+				basicShapeShader->setBool("selected", shapes[s].selected);
+				shapes[s].model_shape->Draw(basicShapeShader, 0);
 			}
 			else if (displayMode == GL_LINE) {
-				wireframeShader->setMat4("model", shapes[s]->model_shape->model);
-				wireframeShader->setBool("selected", shapes[s]->selected);
-				shapes[s]->model_shape->Draw(wireframeShader, 1);
+				wireframeShader->setMat4("model", shapes[s].model_shape->model);
+				wireframeShader->setBool("selected", shapes[s].selected);
+				shapes[s].model_shape->Draw(wireframeShader, 1);
 			}
 			
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			if (shapes[s]->selected && enableModelAxis) {
+			if (shapes[s].selected) {
+				glLineWidth(1.0f);
+				wireframeShader->setMat4("model", shapes[s].model_shape->model);
+				wireframeShader->setBool("selected", shapes[s].selected);
+				shapes[s].model_shape->Draw(wireframeShader, 1);
+			}
+			if (shapes[s].selected && enableModelAxis) {
 				glLineWidth(2.0f);
-				drawModelAxis(shapes[s]);
+				drawModelAxis(&shapes[s]);
 			}
 		}
 
+		glPointSize(2);
+		wireframeShader->setMat4("model", glm::mat4(1.0f));
+		wireframeShader->setBool("selected", TRUE);
+		point_set.Draw(wireframeShader, 2);
 
+
+
+
+		
 		/* 渲染 GUI ------------------------------------*/
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-
+		
 		// Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
 		{
 			//static int counter = 0;
 
-			ImGui::Begin("Tools");                          // Create a window called "Hello, world!" and append into it.
+			ImGuiWindowFlags window_flags = 0;
+			static bool no_move = true;
+			static bool no_resize = true;
+			static bool no_background = false;
+			static bool no_menu = true;
+			static bool no_titlebar = true;
 
-			if (ImGui::Button("Enable/Disable World Axis"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-				enableWorldAxis = !enableWorldAxis;
-			if (ImGui::Button("Enable/Disable Model Axis"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-				enableModelAxis = !enableModelAxis;
-			if (ImGui::Button("Exchange Display Mode"))
-				displayMode == GL_LINE ? displayMode = GL_FILL : displayMode = GL_LINE;
+			if (no_move)         window_flags |= ImGuiWindowFlags_NoMove;
+			if (no_resize)       window_flags |= ImGuiWindowFlags_NoResize;
+			if (no_background)   window_flags |= ImGuiWindowFlags_NoBackground;
+			if (!no_menu)        window_flags |= ImGuiWindowFlags_MenuBar;
+			if (no_titlebar)     window_flags |= ImGuiWindowFlags_NoTitleBar;
+
+			ImGui::Begin("Menu", NULL, window_flags);                          // Create a window called "Hello, world!" and append into it.
+
+			ImGui::Checkbox("Display World Axis", &enableWorldAxis);
+			ImGui::Checkbox("Display Model Axis", &enableModelAxis);
+			//if (ImGui::Button("Enable/Disable World Axis"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+			//	enableWorldAxis = !enableWorldAxis;
+			//if (ImGui::Button("Enable/Disable Model Axis"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+			//	enableModelAxis = !enableModelAxis;
+			
+			
+			//ImGui::Checkbox("No move", &no_move);
+			
+			ImGui::Text("Rendering Mode:");
+			ImGui::RadioButton("Wireframe", &displayMode, GL_LINE); ImGui::SameLine();
+			ImGui::RadioButton("Face", &displayMode, GL_FILL);
+			//if (ImGui::Button("Exchange Display Mode"))
+			//	displayMode == GL_LINE ? displayMode = GL_FILL : displayMode = GL_LINE;
 			//ImGui::Text("counter = %d", counter);
 
+			ImGui::End();
+
+			ImGuiWindowFlags frame_bar_flags =
+				  ImGuiWindowFlags_NoMove
+				| ImGuiWindowFlags_NoResize
+				| ImGuiWindowFlags_NoBackground
+				| ImGuiWindowFlags_NoTitleBar;
+
+			ImGui::Begin("Info Bar", NULL, frame_bar_flags);
+			ImGui::Text("Frame: %.1f FPS", ImGui::GetIO().Framerate);
 			ImGui::End();
 		}
 

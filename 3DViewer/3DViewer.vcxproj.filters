@@ -110,6 +110,12 @@
     <ClInclude Include="imgui_impl_opengl3.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="spfn_shpes.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="point_set.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="wireframe.vert">

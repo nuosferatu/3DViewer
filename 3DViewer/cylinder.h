@@ -35,7 +35,7 @@ public:
 		cylinder_axis = glm::vec3(0.0f, 1.0f, 0.0f);
 		cylinder_radius_squared = 1.0f;
 
-		model_shape = new Model("shapes/cylinder.obj");
+		model_shape = new Model("shapes/cylinder_face_x.obj");
 
 		selected = FALSE;
 	}

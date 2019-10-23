@@ -44,6 +44,13 @@ struct Vertex {
 	glm::vec3 color;      // 颜色
 	glm::vec3 normal;     // 法向量
 	glm::vec2 texCoords;  // 纹理坐标
+
+	Vertex(glm::vec3 _position, glm::vec3 _color = glm::vec3(1.0f, 1.0f, 1.0f)) {
+		this->position = _position;
+		this->color = _color;
+		this->normal = glm::vec3(0.0f, 0.0f, 0.0f);
+		this->texCoords = glm::vec2(0.0f, 0.0f);
+	}
 };
 
 // 纹理
@@ -128,6 +135,8 @@ public:
 		glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, 0);
 		else if (drawType == 1)
 			glDrawElements(GL_LINES, m_indices.size(), GL_UNSIGNED_INT, 0);
+		else if (drawType == 2)
+			glDrawElements(GL_POINTS, m_indices.size(), GL_UNSIGNED_INT, 0);
 		//cout << m_indices.size() << endl;
 		glBindVertexArray(0);
 

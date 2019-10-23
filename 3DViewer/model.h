@@ -60,9 +60,18 @@ public:
 			meshes[i].Draw(shader, drawType);
 	}
 
-	// 旋转
-	void rotate(float angle, glm::vec3 axis) {
+	// 旋转（轴, 角）
+	void inline rotate(float angle, glm::vec3 axis) {
 		model = glm::rotate(model, angle, axis);
+	}
+	// 旋转（轴 -> 轴）
+	void inline rotate(glm::vec3 src, glm::vec3 dst) {
+		src = glm::normalize(src);
+		dst = glm::normalize(dst);
+		float dot = src.x*dst.x + src.y*dst.y + src.z*dst.z;
+		float angle = std::acosf(dot);
+		glm::vec3 axis = glm::normalize(glm::cross(src, dst));
+		rotate(angle, axis);
 	}
 	// 位移
 	void translate(glm::vec3 dxyz) {
@@ -123,7 +132,7 @@ private:
 		// 遍历当前mesh所有顶点
 		for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 		{
-			Vertex vertex;
+			Vertex vertex(glm::vec3(0.0f, 0.0f, 0.0f));
 			glm::vec3 vector; // 把Assimp的顶点转存为glm::vec3
 			glm::vec2 vec;
 
