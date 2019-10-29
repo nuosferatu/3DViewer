@@ -12,12 +12,15 @@
 
 class Primitives {
 public:
-	vector<unsigned int> point_indices;
-	vector<glm::vec3> point_list;
-
+	//vector<unsigned int> point_indices;
+	//vector<glm::vec3> point_list;
 	bool selected;
-
 	Model *model_shape;
+
+	Primitives(string modelpath) {
+		model_shape = new Model(modelpath);
+		selected = FALSE;
+	}
 
 	virtual void rotate(float _angle, glm::vec3 _axis) {
 		model_shape->rotate(_angle, _axis);

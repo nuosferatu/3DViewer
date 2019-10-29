@@ -27,15 +27,10 @@ public:
 	glm::vec3 sphere_center;
 	float sphere_radius_squared;
 
-	Sphere() {
+	Sphere() : Primitives("shapes/sphere_face.obj") {
 		sphere_center = glm::vec3(0.0f, 0.0f, 0.0f);
 		sphere_radius_squared = 1.0f;
-
-		model_shape = new Model("shapes/sphere_face.obj");
-
-		selected = FALSE;
 	}
-
 };
 
 #endif // SPHERE_H

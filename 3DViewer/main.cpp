@@ -63,10 +63,16 @@ bool enableMouseMovement = FALSE;
 bool enableWorldAxis = TRUE;
 bool enableModelAxis = FALSE;
 int current = 0;
+unsigned int highlight = 0;
 bool enableMouseMiddleMovement = FALSE;
+int spfn_displayPoints = 0;
 
 vector<Primitives> shapes;
-unsigned int highlight = 0;
+int currentFileIndex = -1;
+vector<string> filelist;
+vector<SPFN_Shape> spfn_shapes;
+vector<Vertex> point_list;
+
 
 enum interactionStyle {
 	MESHLAB_STYLE,
@@ -271,15 +277,35 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 	case GLFW_KEY_TAB: // 'TAB': 切换高亮
 		highlight++;
-		current = highlight % shapes.size();
+		highlight = highlight % shapes.size();
 		for (unsigned int s = 0; s < shapes.size(); s++) {
 			shapes[s].selected = FALSE;
 		}
-		shapes[current].selected = TRUE;
+		shapes[highlight].selected = TRUE;
 		break;
 
 	case GLFW_KEY_X: // 'X': 切换坐标轴显示与否
 		enableWorldAxis = !enableWorldAxis;
+		break;
+	case GLFW_KEY_RIGHT: // 右方向键，下一个文件
+		currentFileIndex++;
+		currentFileIndex %= filelist.size();
+		
+		vector<SPFN_Shape> new_spfn_shapes;
+		vector<Vertex> new_point_list;
+		vector<Primitives> new_shapes;
+		importPointsFromFile("E:\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt", new_point_list, glm::vec3(1.0f, 0.0f, 0.0f)); // position (x, y, z) of all 8096 points
+		importShapeParasFromFile("E:\\instances_paras\\ins_type_paras_points\\" + filelist[currentFileIndex] + "__ins_type_paras_points.txt", new_spfn_shapes, new_point_list); // 参数形式的形状列表
+		ConstructPrimitives(new_spfn_shapes, new_shapes);
+
+		vector<SPFN_Shape>().swap(spfn_shapes);
+		spfn_shapes.swap(new_spfn_shapes);
+		vector<Vertex>().swap(point_list);
+		point_list.swap(new_point_list);
+		vector<Primitives>().swap(shapes);
+		shapes.swap(new_shapes);
+		
+		shapes[0].selected = true;
 		break;
 	}
 }
@@ -594,147 +620,22 @@ int main() {
 	Shader *modelShader = new Shader("model_lighting.vert", "model_lighting.frag");
 	Shader *floorShader = new Shader("floor.vert", "floor.frag");
 	Shader *basicShapeShader = new Shader("basic_shape.vert", "basic_shape.frag");
+	Shader *spfnPointCloudShader = new Shader("spfn_point_clouds.vert", "spfn_point_clouds.frag");
 	wireframeShader = new Shader("wireframe.vert", "wireframe.frag");
 
 
 	// 加载模型
 	Model floor("floor/c.obj");
-	//Cylinder cylinder;
-	//cylinder.scale(glm::vec3(1.0f, 1.0f, 1.0f));
-	//cylinder.rotate(1.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-	//cylinder.translate(glm::vec3(0.0f, 2.0f, 0.0f));
-	//shapes.push_back(cylinder);
-	/*Cone cone;
-	cone.rotate(1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-	cone.scale(glm::vec3(2.0f, 2.0f, 2.0f));
-	cone.translate(glm::vec3(0.0f, 2.0f, 0.0f));
-	shapes.push_back(cone);*/
-	//Plane plane;
-	//plane.rotate(1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	//plane.scale(glm::vec3(2.0f, 2.0f, 2.0f));
-	//plane.translate(glm::vec3(0.0f, -1.0f, 0.0f));
-	//shapes.push_back(&plane);
-	/*Sphere sphere;
-	sphere.rotate(1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-	sphere.scale(glm::vec3(2.0f, 2.0f, 2.0f));
-	sphere.translate(glm::vec3(0.0f, -2.0f, 0.0f));
-	shapes.push_back(sphere);*/
 
+	ReadFilelist(".filename_list.txt", filelist);
+	currentFileIndex = 0;
 
-
-	vector<SPFN_Shape> spfn_shapes;
-	vector<Vertex> point_list;
-	vector<unsigned int> point_indices;
-	vector<Texture> texture_coords;
-	importPointsFromFile("E:\\out.txt", point_list);
-	importShapeParasFromFile("E:\\sample.txt", spfn_shapes);
-	for (unsigned int k = 0; k < spfn_shapes.size(); k++) {
-		point_indices.insert(point_indices.end(), 
-			spfn_shapes[k].indices.begin(), 
-			spfn_shapes[k].indices.end());
-	}
-	Mesh point_set(point_list, point_indices, texture_coords);
-
-	for (unsigned int i = 0; i < spfn_shapes.size(); i++) {
-		//if (spfn_shapes[i].num < 600) {
-		//	continue;
-		//}
-		// cylinder
-		if (spfn_shapes[i].type == 2 && spfn_shapes[i].num > 600) {
-			Cylinder cylinder_temp;
-			// scale: radius_squared
-			float r, x, y, z;
-			x = spfn_shapes[i].paras[3];
-			y = spfn_shapes[i].paras[4];
-			z = spfn_shapes[i].paras[5];
-			cout << x << " " << y << " " << z << " " << endl;
-			cylinder_temp.rotate(cylinder_temp.cylinder_axis, glm::vec3(x, y, z));
-			cylinder_temp.cylinder_radius_squared = spfn_shapes[i].paras[6];
-			r = std::sqrtf(spfn_shapes[i].paras[6]);
-			cylinder_temp.scale(glm::vec3(r, 1.0f, r));
-			cout << r << endl;
-			// rotate: axis
-			
-			cylinder_temp.cylinder_axis = glm::vec3(x, y, z);
-			// translate: center
-			x = spfn_shapes[i].paras[0];
-			y = spfn_shapes[i].paras[1];
-			z = spfn_shapes[i].paras[2];
-			cout << x << " " << y << " " << z << endl;
-			cylinder_temp.translate(glm::vec3(x, y, z));
-			cylinder_temp.cylinder_center = glm::vec3(x, y, z);
-			shapes.push_back(cylinder_temp);
-			//cout << endl;
-		}
-		// cone
-		else if (spfn_shapes[i].type == 3 && spfn_shapes[i].num > 600) {
-			Cone cone_temp;
-			// scale: half_angle
-			float r, x, y, z;
-			cone_temp.cone_half_angle = spfn_shapes[i].paras[6];
-			r = std::sqrtf(spfn_shapes[i].paras[6]);
-			x = spfn_shapes[i].paras[3];
-			y = spfn_shapes[i].paras[4];
-			z = spfn_shapes[i].paras[5];
-			cone_temp.rotate(cone_temp.cone_axis, glm::vec3(x, y, z));
-			cone_temp.scale(glm::vec3(1.0f, r/2, 1.0f));
-			cout << r << endl;
-			// rotate: axis
-			
-			cout << x << " " << y << " " << z << " " << endl;
-			
-			cone_temp.cone_axis = glm::vec3(x, y, z);
-			// translate: apex
-			x = spfn_shapes[i].paras[0];
-			y = spfn_shapes[i].paras[1];
-			z = spfn_shapes[i].paras[2];
-			cout << x << " " << y << " " << z << endl;
-			//cone_temp.translate(glm::vec3(x, y, z));
-			cone_temp.cone_apex = glm::vec3(x, y, z);
-			shapes.push_back(cone_temp);
-			cout << endl;
-		}
-		// sphere
-		else if (spfn_shapes[i].type == 1 && spfn_shapes[i].num > 600) {
-			Sphere sphere_temp;
-			// scale: radius_squared
-			float r, x, y, z;
-			sphere_temp.sphere_radius_squared = spfn_shapes[i].paras[3];
-			r = std::sqrtf(spfn_shapes[i].paras[3]);
-			sphere_temp.scale(glm::vec3(r, r, r));
-			cout << r << endl;
-			// translate: center
-			x = spfn_shapes[i].paras[0];
-			y = spfn_shapes[i].paras[1];
-			z = spfn_shapes[i].paras[2];
-			cout << x << " " << y << " " << z << endl;
-			sphere_temp.translate(glm::vec3(x, y, z));
-			sphere_temp.sphere_center = glm::vec3(x, y, z);
-			shapes.push_back(sphere_temp);
-			cout << endl;
-		}
-		// plane
-		else if (spfn_shapes[i].type == 0 && spfn_shapes[i].num > 10) {
-			Plane plane_temp;
-			// rotate: n
-			float c, x, y, z;
-			x = spfn_shapes[i].paras[0];
-			y = spfn_shapes[i].paras[1];
-			z = spfn_shapes[i].paras[2];
-			cout << x << " " << y << " " << z << endl;
-			plane_temp.rotate(plane_temp.plane_n, glm::vec3(x, y, z));
-			plane_temp.plane_n = glm::vec3(x, y, z);
-			// translate: c
-			c = spfn_shapes[i].paras[3];
-			plane_temp.translate(glm::vec3(0.0f, c, 0.0f));
-			plane_temp.plane_c = spfn_shapes[i].paras[3];
-			cout << c << endl;
-			shapes.push_back(plane_temp);
-			cout << endl;
-		}
-	}
 	
-
+	importPointsFromFile("E:\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt", point_list, glm::vec3(1.0f, 0.0f, 0.0f)); // position (x, y, z) of all 8096 points
+	importShapeParasFromFile("E:\\instances_paras\\ins_type_paras_points\\" + filelist[currentFileIndex] + "__ins_type_paras_points.txt", spfn_shapes, point_list); // 参数形式的形状列表
+	int bias = 0;
+	ConstructPrimitives(spfn_shapes, shapes, bias);
+	shapes[0].selected = true;
 
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -746,14 +647,8 @@ int main() {
 	ImGui_ImplOpenGL3_Init(glsl_version);
 	
 
-	
 	initAxis();
 
-
-
-
-	//cout << "Operation Mode: " << "PLATFORM_STYLE" << endl;
-	//cout << "Display Mode: " << "FILL" << endl;
 
 	// 渲染循环 --------------------------------------------------------
 	while (!glfwWindowShouldClose(window)) {
@@ -831,6 +726,7 @@ int main() {
 		for (unsigned int s = 0; s < shapes.size(); s++) {
 			glLineWidth(1.0f);
 			
+			// Draw basic shape
 			glPolygonMode(GL_FRONT_AND_BACK, displayMode);
 			if (displayMode == GL_FILL) {
 				basicShapeShader->setMat4("model", shapes[s].model_shape->model);
@@ -843,6 +739,7 @@ int main() {
 				shapes[s].model_shape->Draw(wireframeShader, 1);
 			}
 			
+			// Highlight & Local axis
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			if (shapes[s].selected) {
 				glLineWidth(1.0f);
@@ -854,15 +751,33 @@ int main() {
 				glLineWidth(2.0f);
 				drawModelAxis(&shapes[s]);
 			}
+
+			// Draw points
+			switch (spfn_displayPoints) {
+			case 0: // NONE
+				break;
+			case 1: // SELECTED
+				if (shapes[s].selected) {
+					glPointSize(2);
+					spfnPointCloudShader->setMat4("projection", projection);
+					spfnPointCloudShader->setMat4("view", view);
+					spfnPointCloudShader->setMat4("model", glm::mat4(1.0f));
+					spfn_shapes[s].sub_point_clouds->Draw(spfnPointCloudShader, 2);
+				}
+				break;
+			case 2: // ALL
+				glPointSize(2);
+				spfnPointCloudShader->setMat4("projection", projection);
+				spfnPointCloudShader->setMat4("view", view);
+				spfnPointCloudShader->setMat4("model", glm::mat4(1.0f));
+				spfn_shapes[s].sub_point_clouds->Draw(spfnPointCloudShader, 2);
+				break;
+			default:
+				break;
+			}
 		}
 
-		glPointSize(2);
-		wireframeShader->setMat4("model", glm::mat4(1.0f));
-		wireframeShader->setBool("selected", TRUE);
-		point_set.Draw(wireframeShader, 2);
-
-
-
+		
 
 		
 		/* 渲染 GUI ------------------------------------*/
@@ -896,6 +811,7 @@ int main() {
 			//	enableWorldAxis = !enableWorldAxis;
 			//if (ImGui::Button("Enable/Disable Model Axis"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
 			//	enableModelAxis = !enableModelAxis;
+
 			
 			
 			//ImGui::Checkbox("No move", &no_move);
@@ -906,6 +822,11 @@ int main() {
 			//if (ImGui::Button("Exchange Display Mode"))
 			//	displayMode == GL_LINE ? displayMode = GL_FILL : displayMode = GL_LINE;
 			//ImGui::Text("counter = %d", counter);
+			
+			ImGui::Text("Display points:");
+			ImGui::RadioButton("None", &spfn_displayPoints, 0); ImGui::SameLine();
+			ImGui::RadioButton("Selected", &spfn_displayPoints, 1); ImGui::SameLine();
+			ImGui::RadioButton("All", &spfn_displayPoints, 2);
 
 			ImGui::End();
 
@@ -917,6 +838,7 @@ int main() {
 
 			ImGui::Begin("Info Bar", NULL, frame_bar_flags);
 			ImGui::Text("Frame: %.1f FPS", ImGui::GetIO().Framerate);
+			ImGui::Text("Points selected: %d", spfn_shapes[highlight].num);
 			ImGui::End();
 		}
 

@@ -30,16 +30,11 @@ public:
 	glm::vec3 cylinder_axis;
 	float cylinder_radius_squared;
 
-	Cylinder() {
+	Cylinder() : Primitives("shapes/cylinder_face_x.obj") {
 		cylinder_center = glm::vec3(0.0f, 0.0f, 0.0f);
 		cylinder_axis = glm::vec3(0.0f, 1.0f, 0.0f);
 		cylinder_radius_squared = 1.0f;
-
-		model_shape = new Model("shapes/cylinder_face_x.obj");
-
-		selected = FALSE;
 	}
-
 };
 
 #endif // CYLINDER_H

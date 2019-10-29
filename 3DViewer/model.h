@@ -151,7 +151,7 @@ private:
 			}
 			else
 			{
-				vertex.color = glm::vec3(0.8f, 0.8f, 0.8f);
+				vertex.color = glm::vec3(0.5f, 0.5f, 0.5f);
 			}
 
 			// ∑®œÚ¡ø

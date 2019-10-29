@@ -29,16 +29,11 @@ public:
 	glm::vec3 cone_axis;
 	float cone_half_angle;
 
-	Cone() {
+	Cone() : Primitives("shapes/cone_face.obj") {
 		cone_apex = glm::vec3(0.0f, 0.0f, 0.0f);
 		cone_axis = glm::vec3(0.0f, 1.0f, 0.0f);
 		cone_half_angle = 1.0f;
-
-		model_shape = new Model("shapes/cone_face.obj");
-
-		selected = FALSE;
 	}
-
 };
 
 #endif // CONE_H

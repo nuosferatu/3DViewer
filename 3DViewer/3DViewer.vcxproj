@@ -165,6 +165,8 @@
     <None Include="model_lighting.vert" />
     <None Include="point_clouds.frag" />
     <None Include="point_clouds.vert" />
+    <None Include="spfn_point_clouds.frag" />
+    <None Include="spfn_point_clouds.vert" />
     <None Include="wireframe.frag" />
     <None Include="wireframe.vert" />
   </ItemGroup>

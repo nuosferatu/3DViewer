@@ -27,16 +27,10 @@ public:
 	glm::vec3 plane_n;
 	float plane_c;
 
-	Plane() {
+	Plane() : Primitives("shapes/plane_face.obj") {
 		plane_n = glm::vec3(0.0f, 1.0f, 0.0f);
 		plane_c = 1.0f;
-
-		//model_shape = new Model("shapes/plane.obj");
-		model_shape = new Model("shapes/plane_face.obj");
-
-		selected = FALSE;
 	}
-
 };
 
 #endif // PLANE_H

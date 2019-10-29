@@ -154,6 +154,12 @@
     <None Include="basic_shape.frag">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="spfn_point_clouds.vert">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="spfn_point_clouds.frag">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="3DViewer.rc">
