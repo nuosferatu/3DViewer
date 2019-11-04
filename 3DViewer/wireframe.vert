@@ -16,7 +16,7 @@ uniform bool selected = false;
 void main()
 {
     if (selected) {
-	    outColor = aColor + vec3(0.24, 0.24, 0.0);
+	    outColor = aColor + vec3(0.5, 0.5, 0.5);
 		if (outColor.r > 1.0) outColor.r = 1.0;
 		if (outColor.g > 1.0) outColor.g = 1.0;
 		if (outColor.b > 1.0) outColor.b = 1.0;

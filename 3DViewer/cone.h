@@ -23,13 +23,13 @@ Points: 344 points
 10 12 48 66 81 136 154 276 298 306 307 319 327 373 382 422 4 ... (344 indices)
 */
 
-class Cone : public Primitives {
+class Cone : public Primitive {
 public:
 	glm::vec3 cone_apex;
 	glm::vec3 cone_axis;
 	float cone_half_angle;
 
-	Cone() : Primitives("shapes/cone_face.obj") {
+	Cone() : Primitive("shapes/cone_face.obj") {
 		cone_apex = glm::vec3(0.0f, 0.0f, 0.0f);
 		cone_axis = glm::vec3(0.0f, 1.0f, 0.0f);
 		cone_half_angle = 1.0f;

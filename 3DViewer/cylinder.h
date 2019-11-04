@@ -24,13 +24,13 @@ Points: 4080 points
 0 1 2 4 5 9 11 13 14 16 17 18 19 23 25 26 28 29 31 32 33 36 37 38 40 41 42 4 ... (4080 indices)
 */
 
-class Cylinder : public Primitives {
+class Cylinder : public Primitive {
 public:
 	glm::vec3 cylinder_center;
 	glm::vec3 cylinder_axis;
 	float cylinder_radius_squared;
 
-	Cylinder() : Primitives("shapes/cylinder_face_x.obj") {
+	Cylinder() : Primitive("shapes/cylinder_face_x.obj") {
 		cylinder_center = glm::vec3(0.0f, 0.0f, 0.0f);
 		cylinder_axis = glm::vec3(0.0f, 1.0f, 0.0f);
 		cylinder_radius_squared = 1.0f;

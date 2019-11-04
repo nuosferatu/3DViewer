@@ -29,7 +29,7 @@
 #include "cone.h"
 #include "sphere.h"
 #include "plane.h"
-#include "spfn_shpes.h"
+#include "shape.h"
 #include "resource.h"
 
 // std
@@ -57,21 +57,35 @@ bool firstMouse = true;
 float deltaTime = 0.0f; // 当前帧与上一帧的时间差
 float lastFrame = 0.0f; // 上一帧的时间
 
-// 一些状态量
-int displayMode = GL_FILL; // 渲染模式
-bool enableMouseMovement = FALSE;
-bool enableWorldAxis = TRUE;
-bool enableModelAxis = FALSE;
-int current = 0;
-unsigned int highlight = 0;
-bool enableMouseMiddleMovement = FALSE;
-int spfn_displayPoints = 0;
+Shader *modelShader;
+Shader *floorShader;
+Shader *basicShapeShader;
+Shader *spfnPointCloudShader;
+Shader *wireframeShader;
 
-vector<Primitives> shapes;
+// 一些状态量
+int displayMode = GL_LINE; // 渲染模式
+bool enableMouseMovement = false;
+bool enableWorldAxis = true;
+bool enableModelAxis = false;
+int current = 0;
+unsigned int highlight = -1;
+bool enableMouseMiddleMovement = false;
+int spfn_displayPoints = 1;
+bool spfn_switchBetween = false;
+
+string primitives_name[] = {
+	"plane",
+	"sphere",
+	"cylinder",
+	"cone"
+};
+
+glm::mat4 raw_point_model = glm::mat4(1.0f);
+
+vector<Shape> shapes;
 int currentFileIndex = -1;
 vector<string> filelist;
-vector<SPFN_Shape> spfn_shapes;
-vector<Vertex> point_list;
 
 
 enum interactionStyle {
@@ -82,10 +96,30 @@ enum interactionStyle {
 interactionStyle OperationMode = PLATFORM_STYLE;
 
 
-Shader *wireframeShader;
+
 Mesh *axis_mesh;
 Mesh *floor_mesh;
 
+void switchHighlight() {
+	// switch among all
+	if (spfn_switchBetween) {
+		highlight++;
+		highlight = highlight % shapes[currentFileIndex].instances.size();
+		for (unsigned int s = 0; s < shapes[currentFileIndex].instances.size(); s++)
+			shapes[currentFileIndex].instances[s].selected = false;
+		shapes[currentFileIndex].instances[highlight].selected = true;
+	}
+	// Switch among matched
+	else {
+		do {
+			highlight++;
+			highlight = highlight % shapes[currentFileIndex].instances.size();
+		} while (shapes[currentFileIndex].instances[highlight].mask == false);
+		for (unsigned int s = 0; s < shapes[currentFileIndex].instances.size(); s++)
+			shapes[currentFileIndex].instances[s].selected = false;
+		shapes[currentFileIndex].instances[highlight].selected = true;
+	}
+}
 
 // 窗口尺寸变化回调函数 -------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
@@ -276,37 +310,45 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		break;
 
 	case GLFW_KEY_TAB: // 'TAB': 切换高亮
-		highlight++;
-		highlight = highlight % shapes.size();
-		for (unsigned int s = 0; s < shapes.size(); s++) {
-			shapes[s].selected = FALSE;
-		}
-		shapes[highlight].selected = TRUE;
+		// Switch between matched
+		switchHighlight();
 		break;
 
 	case GLFW_KEY_X: // 'X': 切换坐标轴显示与否
 		enableWorldAxis = !enableWorldAxis;
 		break;
-	case GLFW_KEY_RIGHT: // 右方向键，下一个文件
-		currentFileIndex++;
-		currentFileIndex %= filelist.size();
-		
-		vector<SPFN_Shape> new_spfn_shapes;
-		vector<Vertex> new_point_list;
-		vector<Primitives> new_shapes;
-		importPointsFromFile("E:\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt", new_point_list, glm::vec3(1.0f, 0.0f, 0.0f)); // position (x, y, z) of all 8096 points
-		importShapeParasFromFile("E:\\instances_paras\\ins_type_paras_points\\" + filelist[currentFileIndex] + "__ins_type_paras_points.txt", new_spfn_shapes, new_point_list); // 参数形式的形状列表
-		ConstructPrimitives(new_spfn_shapes, new_shapes);
 
-		vector<SPFN_Shape>().swap(spfn_shapes);
-		spfn_shapes.swap(new_spfn_shapes);
-		vector<Vertex>().swap(point_list);
-		point_list.swap(new_point_list);
-		vector<Primitives>().swap(shapes);
-		shapes.swap(new_shapes);
+	case GLFW_KEY_RIGHT: // 右方向键，下一个文件
+		if (currentFileIndex > filelist.size() - 1)
+			currentFileIndex = 0;
+		else
+			currentFileIndex++;
+		cout << "File name: " << filelist[currentFileIndex] << endl;
 		
-		shapes[0].selected = true;
+		Shape temp("E:\\instances_paras\\merge_ins_paras_&_ins_points\\" + filelist[currentFileIndex] + ".txt",
+			"E:\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt",
+			"E:\\instances_paras\\matching_indices\\" + filelist[currentFileIndex] + "_matching_indices.txt"
+		);
+		temp.instances[0].selected = true;
+		shapes.push_back(temp);
+		highlight = -1;
+		switchHighlight();
 		break;
+	//case GLFW_KEY_LEFT: // 左方向键，上一个文件
+		/*if (currentFileIndex > 0)
+			currentFileIndex--;
+		else
+			currentFileIndex = filelist.size();
+
+		cout << "File name: " << filelist[currentFileIndex] << endl;
+
+		Shape temp("E:\\instances_paras\\merge_ins_paras_&_ins_points\\" + filelist[currentFileIndex] + ".txt",
+			"E:\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt",
+			"E:\\instances_paras\\matching_indices\\" + filelist[currentFileIndex] + "_matching_indices.txt"
+		);
+		temp.instances[0].selected = true;
+		shapes.push_back(temp);*/
+		//break;
 	}
 }
 
@@ -413,34 +455,24 @@ void initAxis()
 		vec.z = axis_points[i * 6 + 5];
 		vertex.color = vec;
 		vertex.normal = glm::vec3(0.0f, 0.0f, 0.0f);
-		vertex.texCoords = glm::vec2(0.0f, 0.0f);
+		//vertex.texCoords = glm::vec2(0.0f, 0.0f);
 		vertices.push_back(vertex);
 	}
 	vector<unsigned int> indices;
 	for (unsigned int i = 0; i < sizeof(axis_indices) / sizeof(axis_indices[0]); i++) {
 		indices.push_back(axis_indices[i]);
 	}
-	vector<Texture> textures;
-	axis_mesh = new Mesh(vertices, indices, textures);
+	//vector<Texture> textures;
+	axis_mesh = new Mesh(vertices, indices);
 }
 
-void drawWorldAxis()
+void drawAxis(glm::mat4 _model_matrix)
 {
-	axis_mesh->model = glm::mat4(1.0f);
-	axis_mesh->scale(glm::vec3(1.0f, 1.0f, 1.0f));
-	wireframeShader->setMat4("model", axis_mesh->model);
-	wireframeShader->setBool("selected", TRUE);
-	axis_mesh->Draw(wireframeShader, 0);
+	//axis_mesh->getModelMatrix() = glm::mat4(1.0f);
+	//axis_mesh->scale(glm::vec3(1.0f, 1.0f, 1.0f));
+	axis_mesh->draw(wireframeShader, 0);
 }
 
-void drawModelAxis(Primitives *shape)
-{
-	axis_mesh->model = shape->model_shape->model;
-	axis_mesh->scale(glm::vec3(0.15f, 0.15f, 0.15f));
-	wireframeShader->setMat4("model", axis_mesh->model);
-	wireframeShader->setBool("selected", shape->selected);
-	axis_mesh->Draw(wireframeShader, 0);
-}
 
 void drawFloor()
 {
@@ -594,6 +626,14 @@ void drawFloor()
 	glBindVertexArray(0);
 }
 
+void ReadFilelist(string _filepath, vector<string>& _filelist) {
+	// read file
+	fstream file(_filepath);
+	string line;
+	while (getline(file, line)) {
+		_filelist.push_back(line);
+	}
+}
 
 
 //------------------------------  主函数  ------------------------------
@@ -616,11 +656,10 @@ int main() {
 
 
 	// 创建着色器
-	//Shader pointCloudsShader("point_clouds.vert", "point_clouds.frag");
-	Shader *modelShader = new Shader("model_lighting.vert", "model_lighting.frag");
-	Shader *floorShader = new Shader("floor.vert", "floor.frag");
-	Shader *basicShapeShader = new Shader("basic_shape.vert", "basic_shape.frag");
-	Shader *spfnPointCloudShader = new Shader("spfn_point_clouds.vert", "spfn_point_clouds.frag");
+	modelShader = new Shader("model_lighting.vert", "model_lighting.frag");
+	floorShader = new Shader("floor.vert", "floor.frag");
+	basicShapeShader = new Shader("basic_shape.vert", "basic_shape.frag");
+	spfnPointCloudShader = new Shader("spfn_point_clouds.vert", "spfn_point_clouds.frag");
 	wireframeShader = new Shader("wireframe.vert", "wireframe.frag");
 
 
@@ -630,12 +669,38 @@ int main() {
 	ReadFilelist(".filename_list.txt", filelist);
 	currentFileIndex = 0;
 
-	
-	importPointsFromFile("E:\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt", point_list, glm::vec3(1.0f, 0.0f, 0.0f)); // position (x, y, z) of all 8096 points
-	importShapeParasFromFile("E:\\instances_paras\\ins_type_paras_points\\" + filelist[currentFileIndex] + "__ins_type_paras_points.txt", spfn_shapes, point_list); // 参数形式的形状列表
-	int bias = 0;
-	ConstructPrimitives(spfn_shapes, shapes, bias);
-	shapes[0].selected = true;
+	Shape temp("E:\\instances_paras\\merge_ins_paras_&_ins_points\\" + filelist[currentFileIndex] + ".txt",
+		"E:\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt",
+		"E:\\instances_paras\\matching_indices\\" + filelist[currentFileIndex] + "_matching_indices.txt");
+	temp.instances[0].selected = true;
+	shapes.push_back(temp);
+	cout << "File name: " << filelist[currentFileIndex] << endl;
+
+
+
+	vector<Vertex> ppps;
+	Vertex ppp1(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	Vertex ppp2(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	Vertex ppp3(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	Vertex ppp4(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	Vertex ppp5(glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	Vertex ppp6(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	ppps.push_back(ppp1);
+	ppps.push_back(ppp2);
+	ppps.push_back(ppp3);
+	ppps.push_back(ppp4);
+	ppps.push_back(ppp5);
+	ppps.push_back(ppp6);
+	vector<unsigned int> iiis;
+	iiis.push_back(0);
+	iiis.push_back(1);
+	iiis.push_back(2);
+	iiis.push_back(3);
+	iiis.push_back(4);
+	iiis.push_back(5);
+	Mesh aaa(ppps, iiis);
+
+
 
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -648,6 +713,8 @@ int main() {
 	
 
 	initAxis();
+
+	switchHighlight();
 
 
 	// 渲染循环 --------------------------------------------------------
@@ -676,35 +743,36 @@ int main() {
 
 		/* 渲染场景 ------------------------------------*/
 
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-		glm::mat4 view = camera.GetViewMatrix();
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::scale(model, glm::vec3(0.4f, 0.4f, 0.4f));
+		glm::mat4 proj_matrix = glm::perspective(glm::radians(camera.Zoom), SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 view_matrix = camera.GetViewMatrix();
+		
 
 		// 地板
-		floorShader->setMat4("projection", projection);
-		floorShader->setMat4("view", view);
-		model = glm::translate(model, glm::vec3(0.0f, -0.002f, 0.0f));
-		floorShader->setMat4("model", model);
+		glm::mat4 floor_model_matrix = glm::mat4(1.0f);
+		floor_model_matrix = glm::translate(floor_model_matrix, glm::vec3(0.0f, -0.002f, 0.0f));
+		floor_model_matrix = glm::scale(floor_model_matrix, glm::vec3(0.2f, 0.2f, 0.2f));
+		floorShader->setMat4("projection", proj_matrix);
+		floorShader->setMat4("view", view_matrix);
+		floorShader->setMat4("model", floor_model_matrix);
+
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glLineWidth(1.0f);
-		floor.Draw(floorShader, 1);
+		floor.draw(floorShader, 1);
 
 		// 世界坐标系坐标轴
-		model = glm::translate(model, glm::vec3(0.0f, 0.002f, 0.0f));
-		wireframeShader->setMat4("projection", projection);
-		wireframeShader->setMat4("view", view);
-		wireframeShader->setMat4("model", model);
+		glm::mat4 world_model_matrix = glm::mat4(1.0f);
+		world_model_matrix = glm::translate(world_model_matrix, glm::vec3(0.0f, 0.002f, 0.0f));
+		world_model_matrix = glm::scale(world_model_matrix, glm::vec3(0.5f, 0.5f, 0.5f));
+		wireframeShader->setMat4("projection", proj_matrix);
+		wireframeShader->setMat4("view", view_matrix);
+		wireframeShader->setMat4("model", world_model_matrix);
 		wireframeShader->setBool("selected", TRUE);
 		if (enableWorldAxis) {
 			glLineWidth(2.0f);
-			drawWorldAxis();
+			drawAxis(world_model_matrix);
 		}
 
 		// Model
-		basicShapeShader->setMat4("projection", projection);
-		basicShapeShader->setMat4("view", view);
-		//basicShapeShader->setMat4("model", model);
 		basicShapeShader->setVec3("light.position", 0.0f, 30.0f, 4.0f);
 		basicShapeShader->setVec3("light.ambient", 0.24f, 0.24f, 0.24f);
 		basicShapeShader->setVec3("light.diffuse", 0.8f, 0.8f, 0.8f);
@@ -723,61 +791,96 @@ int main() {
 		basicShapeShader->setFloat("material2.shininess", 64.0f);
 
 
-		for (unsigned int s = 0; s < shapes.size(); s++) {
+
+		for (unsigned int s = 0; s < shapes[currentFileIndex].instances.size(); s++) {
 			glLineWidth(1.0f);
 			
 			// Draw basic shape
 			glPolygonMode(GL_FRONT_AND_BACK, displayMode);
 			if (displayMode == GL_FILL) {
-				basicShapeShader->setMat4("model", shapes[s].model_shape->model);
-				basicShapeShader->setBool("selected", shapes[s].selected);
-				shapes[s].model_shape->Draw(basicShapeShader, 0);
+				if (shapes[currentFileIndex].instances[s].mask && shapes[currentFileIndex].instances[s].point_num) {
+					basicShapeShader->setMat4("projection", proj_matrix);
+					basicShapeShader->setMat4("view", view_matrix);
+					basicShapeShader->setMat4("model", shapes[currentFileIndex].instances[s].model_shape->getModelMatrix());
+					basicShapeShader->setBool("selected", shapes[currentFileIndex].instances[s].selected);
+					shapes[currentFileIndex].instances[s].model_shape->draw(basicShapeShader, 0);
+				}
 			}
 			else if (displayMode == GL_LINE) {
-				wireframeShader->setMat4("model", shapes[s].model_shape->model);
-				wireframeShader->setBool("selected", shapes[s].selected);
-				shapes[s].model_shape->Draw(wireframeShader, 1);
+				if (shapes[currentFileIndex].instances[s].mask && shapes[currentFileIndex].instances[s].point_num) {
+					wireframeShader->setMat4("projection", proj_matrix);
+					wireframeShader->setMat4("view", view_matrix);
+					wireframeShader->setMat4("model", shapes[currentFileIndex].instances[s].model_shape->getModelMatrix());
+					wireframeShader->setBool("selected", shapes[currentFileIndex].instances[s].selected);
+					shapes[currentFileIndex].instances[s].model_shape->draw(wireframeShader, 1);
+				}
 			}
 			
 			// Highlight & Local axis
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			if (shapes[s].selected) {
-				glLineWidth(1.0f);
-				wireframeShader->setMat4("model", shapes[s].model_shape->model);
-				wireframeShader->setBool("selected", shapes[s].selected);
-				shapes[s].model_shape->Draw(wireframeShader, 1);
-			}
-			if (shapes[s].selected && enableModelAxis) {
+			if (shapes[currentFileIndex].instances[s].mask 
+				&& shapes[currentFileIndex].instances[s].selected 
+				&& shapes[currentFileIndex].instances[s].point_num) {
 				glLineWidth(2.0f);
-				drawModelAxis(&shapes[s]);
+				wireframeShader->setMat4("projection", proj_matrix);
+				wireframeShader->setMat4("view", view_matrix);
+				wireframeShader->setMat4("model", shapes[currentFileIndex].instances[s].model_shape->getModelMatrix());
+				wireframeShader->setBool("selected", shapes[currentFileIndex].instances[s].selected);
+				shapes[currentFileIndex].instances[s].model_shape->draw(wireframeShader, 1);
 			}
+			if (shapes[currentFileIndex].instances[s].mask 
+				&& shapes[currentFileIndex].instances[s].selected 
+				&& shapes[currentFileIndex].instances[s].point_num 
+				&& enableModelAxis) {
+				glLineWidth(2.0f);
+				glm::mat4 local_model_matrix = glm::mat4(1.0f);
+				local_model_matrix = glm::translate(local_model_matrix, shapes[currentFileIndex].instances[s].center);
+				local_model_matrix = glm::scale(local_model_matrix, glm::vec3(0.2f, 0.2f, 0.2f));
+				//glm::rotate(local_model_matrix, );
+				wireframeShader->setMat4("projection", proj_matrix);
+				wireframeShader->setMat4("view", view_matrix);
+				wireframeShader->setMat4("model", local_model_matrix);
+				wireframeShader->setBool("selected", TRUE);
+				//drawAxis(&shapes[currentFileIndex].instances[s]);
+				drawAxis(local_model_matrix);
+			}
+	
 
+
+			
 			// Draw points
 			switch (spfn_displayPoints) {
 			case 0: // NONE
 				break;
 			case 1: // SELECTED
-				if (shapes[s].selected) {
-					glPointSize(2);
-					spfnPointCloudShader->setMat4("projection", projection);
-					spfnPointCloudShader->setMat4("view", view);
-					spfnPointCloudShader->setMat4("model", glm::mat4(1.0f));
-					spfn_shapes[s].sub_point_clouds->Draw(spfnPointCloudShader, 2);
+				if (shapes[currentFileIndex].instances[s].selected && shapes[currentFileIndex].instances[s].point_num > 0) {
+					glPointSize(4);
+					spfnPointCloudShader->setMat4("projection", proj_matrix);
+					spfnPointCloudShader->setMat4("view", view_matrix);
+					spfnPointCloudShader->setMat4("model", raw_point_model);
+					shapes[currentFileIndex].instances[s].model_pointclouds->draw(spfnPointCloudShader, 2);
 				}
 				break;
 			case 2: // ALL
-				glPointSize(2);
-				spfnPointCloudShader->setMat4("projection", projection);
-				spfnPointCloudShader->setMat4("view", view);
-				spfnPointCloudShader->setMat4("model", glm::mat4(1.0f));
-				spfn_shapes[s].sub_point_clouds->Draw(spfnPointCloudShader, 2);
+				if (shapes[currentFileIndex].instances[s].point_num > 0) {
+					glPointSize(4);
+					spfnPointCloudShader->setMat4("projection", proj_matrix);
+					spfnPointCloudShader->setMat4("view", view_matrix);
+					spfnPointCloudShader->setMat4("model", raw_point_model);
+					shapes[currentFileIndex].instances[s].model_pointclouds->draw(spfnPointCloudShader, 2);
+				}
 				break;
 			default:
 				break;
 			}
 		}
 
-		
+
+		glPointSize(4);
+		spfnPointCloudShader->setMat4("projection", proj_matrix);
+		spfnPointCloudShader->setMat4("view", view_matrix);
+		spfnPointCloudShader->setMat4("model", raw_point_model);
+		aaa.draw(spfnPointCloudShader, 2);
 
 		
 		/* 渲染 GUI ------------------------------------*/
@@ -828,6 +931,8 @@ int main() {
 			ImGui::RadioButton("Selected", &spfn_displayPoints, 1); ImGui::SameLine();
 			ImGui::RadioButton("All", &spfn_displayPoints, 2);
 
+			ImGui::Checkbox("Switch among all", &spfn_switchBetween);
+
 			ImGui::End();
 
 			ImGuiWindowFlags frame_bar_flags =
@@ -838,7 +943,11 @@ int main() {
 
 			ImGui::Begin("Info Bar", NULL, frame_bar_flags);
 			ImGui::Text("Frame: %.1f FPS", ImGui::GetIO().Framerate);
-			ImGui::Text("Points selected: %d", spfn_shapes[highlight].num);
+			ImGui::Text("Selected:");
+			ImGui::Text("- primitive: %d", highlight);
+			ImGui::Text("- shape: %d", shapes[currentFileIndex].instances[highlight].type);
+			ImGui::Text("- points: %d", shapes[currentFileIndex].instances[highlight].point_num);
+
 			ImGui::End();
 		}
 

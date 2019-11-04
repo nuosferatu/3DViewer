@@ -22,12 +22,12 @@ Points: 67 points
 15 62 445 456 564 704 749 770 777 1048 1079 1382 ... (67 indices)
 */
 
-class Sphere : public Primitives {
+class Sphere : public Primitive {
 public:
 	glm::vec3 sphere_center;
 	float sphere_radius_squared;
 
-	Sphere() : Primitives("shapes/sphere_face.obj") {
+	Sphere() : Primitive("shapes/sphere_face.obj") {
 		sphere_center = glm::vec3(0.0f, 0.0f, 0.0f);
 		sphere_radius_squared = 1.0f;
 	}

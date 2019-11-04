@@ -22,12 +22,12 @@ Points: 25 points
 519 926 999 2184 3005 3072 3445 3501 3514 3756 3935 4008 426 ... (25 indices)
 */
 
-class Plane : public Primitives {
+class Plane : public Primitive {
 public:
 	glm::vec3 plane_n;
 	float plane_c;
 
-	Plane() : Primitives("shapes/plane_face.obj") {
+	Plane() : Primitive("shapes/plane_face.obj") {
 		plane_n = glm::vec3(0.0f, 1.0f, 0.0f);
 		plane_c = 1.0f;
 	}
