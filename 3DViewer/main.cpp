@@ -46,6 +46,8 @@ const static char* glsl_version = "#version 130";
 // 窗口参数
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
+unsigned int current_scr_width = SCR_WIDTH;
+unsigned int current_scr_height = SCR_HEIGHT;
 const static char* WINDOW_NAME = "3D VIEWER";
 
 // 摄像机参数
@@ -123,6 +125,8 @@ void switchHighlight() {
 
 // 窗口尺寸变化回调函数 -------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+	current_scr_width = width;
+	current_scr_height = height;
 	glViewport(0, 0, width, height);
 }
 
@@ -716,6 +720,11 @@ int main() {
 
 	switchHighlight();
 
+	// 视口
+	int display_w, display_h;
+	glfwGetFramebufferSize(window, &display_w, &display_h);
+	glViewport(0, 0, display_w, display_h);
+
 
 	// 渲染循环 --------------------------------------------------------
 	while (!glfwWindowShouldClose(window)) {
@@ -727,10 +736,6 @@ int main() {
 		// 输入
 		processInput(window);  // 窗口按键检测
 
-		// 视口
-		int display_w, display_h;
-		glfwGetFramebufferSize(window, &display_w, &display_h);
-		glViewport(0, 0, display_w, display_h);
 
 		// 清除颜色缓存
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -743,7 +748,7 @@ int main() {
 
 		/* 渲染场景 ------------------------------------*/
 
-		glm::mat4 proj_matrix = glm::perspective(glm::radians(camera.Zoom), SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 proj_matrix = glm::perspective(glm::radians(camera.Zoom), current_scr_width / (float)current_scr_height, 0.1f, 100.0f);
 		glm::mat4 view_matrix = camera.GetViewMatrix();
 		
 
