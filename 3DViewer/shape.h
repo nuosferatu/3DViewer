@@ -19,10 +19,19 @@ public:
 	vector<Primitive> instances; // 基元列表（通常是 24 个）
 	vector<Vertex> points;       // 8096 个点的坐标
 
-	Shape(string paras_path, string points_path, string mask_path) {
-		importPoints(points_path, glm::vec3(1.0f, 0.0f, 0.0f));
-		importParas(paras_path);
-		importAndSetMask(mask_path);
+	vector<unsigned int> indices;
+	Mesh *raw_points;
+
+
+	Shape(string paras_path,
+		  string points_path,
+		  string mask_path,
+		  string matching_path,
+		  string points_gt_path)
+	{
+		importPoints(points_path);
+		importParas(paras_path, glm::vec3(1.0f, 0.0f, 0.0f));
+		importPointsGT(matching_path, points_gt_path, glm::vec3(1.0f, 0.65f, 0.0f));
 	}
 
 private:
@@ -44,10 +53,13 @@ private:
 			s << lines[i];
 			s >> x >> y >> z;
 			points.push_back(Vertex(glm::vec3(x, y, z), _color));
+			indices.push_back(i);
 		}
+
+		raw_points = new Mesh(points, indices);
 	}
 
-	void importParas(string paras_path) {
+	void importParas(string paras_path, glm::vec3 _color = glm::vec3(1.0f, 1.0f, 1.0f)) {
 		// read file
 		fstream paras_file(paras_path);
 		vector<string> lines;
@@ -56,6 +68,7 @@ private:
 		float x, y, z;
 		bool dirty = false;
 		int pre = -1;
+		int m;
 
 		// read file
 		while (getline(paras_file, line)) {
@@ -67,6 +80,7 @@ private:
 			// every single instance
 			if (lines[i].c_str()[3] == '-') {
 				Primitive ins;
+				ins.mask = false;
 
 				// type
 				i++;
@@ -170,44 +184,72 @@ private:
 					s.str("");
 					s.clear();
 					s << lines[i];
-					s >> x;
-					dirty = true;
-					while (dirty) {
-						ins.indices.push_back(x);
-						ins.points.push_back(this->points[x]);
-						pre = x;
-						s >> x;
-						if (x == pre) {
-							dirty = false;
-						}
-						else {
-							dirty = true;
-						}
+					for (unsigned int pp = 0; pp < ins.point_num; pp++) {
+						//s.str("");
+						//s.clear();
+						//s << lines[i];
+						s >> m;
+						//cout << m << " ";
+						ins.indices.push_back(m);
+						//ins.points.push_back(Vertex(this->points[m].position, _color));
 					}
 				}
 
 				ins.createModel();
+				if (ins.point_num > 0) {
+					ins.model_pointclouds = new Mesh(points, ins.indices);
+				}
+				else {
+					ins.model_pointclouds = nullptr;
+				}
 				instances.push_back(ins);
 			}
 		}
 	}
 
-	void importAndSetMask(string mask_path) {
-		// 
-		fstream mask_file(mask_path);
+	void importPointsGT(string points_gt_path, string matching_path, glm::vec3 _color = glm::vec3(1.0f, 1.0f, 1.0f)) {
+		// read file
+		fstream gt_file(points_gt_path);
+		fstream matching_file(matching_path);
+		vector<string> lines;
+		vector<string> lines1;
 		string line;
-		vector<bool> masks;
-		
-		// read masks
-		while (getline(mask_file, line)) {
-			masks.push_back(bool(atoi(line.c_str())));
+		stringstream s;
+		float x, y, z;
+		Primitive *p = nullptr;
+		unsigned int ins_index;
+		unsigned int ins_index1;
+
+		// read file
+		while (getline(gt_file, line)) {
+			lines.push_back(line);
+		}
+		while (getline(matching_file, line)) {
+			lines1.push_back(line);
 		}
 
-		for (unsigned int i = 0; i < masks.size(); i++) {
-			instances[i].mask = masks[i];
+		// analysis shapes
+		for (unsigned int i = 0; i < lines.size(); i++) {
+			// every single instance
+			if (lines[i].c_str()[3] == '-') {
+				ins_index = atoi(lines[i].substr(4).c_str()) - 1;
+				ins_index1 = atoi(lines1[ins_index].c_str());
+				if (ins_index1 > 0) {
+					instances[ins_index1].mask = true;
+					for (unsigned int j = 0; j < 512; j++) {
+						i++;
+						s.str("");
+						s.clear();
+						s << lines[i];
+						s >> x >> y >> z;
+						instances[ins_index1].points_gt.push_back(Vertex(glm::vec3(x, y, z), _color));
+						instances[ins_index1].indices_gt.push_back(j);
+					}
+					instances[ins_index1].model_gt = new Mesh(instances[ins_index1].points_gt, instances[ins_index1].indices_gt);
+				}
+			}
 		}
 	}
-
 };
 
 #endif  // SHAPE_H

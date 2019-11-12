@@ -144,6 +144,7 @@
     <ClInclude Include="imstb_truetype.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="model.h" />
+    <ClInclude Include="my_ui.h" />
     <ClInclude Include="plane.h" />
     <ClInclude Include="primitive.h" />
     <ClInclude Include="resource.h" />

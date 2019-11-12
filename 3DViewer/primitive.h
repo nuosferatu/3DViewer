@@ -17,7 +17,7 @@ public:
 	vector<float> paras;          // 基元参数
 	int point_num;                // 点数
 	vector<unsigned int> indices; // 点在 Shape 中的索引
-	vector<Vertex> points;        // 点的坐标
+	//vector<Vertex> points;        // 点的坐标
 	Mesh *model_pointclouds;      // 点云模型
 	glm::vec3 center;
 
@@ -25,6 +25,9 @@ public:
 	Model *model_shape;           // 形状模型
 	bool selected;                // 是否选中
 	bool mask;                    // 掩码
+	vector<Vertex> points_gt;        // 真实数据：点的坐标
+	vector<unsigned int> indices_gt; // 真实数据：点的索引
+	Mesh *model_gt;                  // 真实数据：模型
 
 	// 默认构造
 	Primitive() : type(-1), point_num(0), model_pointclouds(nullptr), model_shape(nullptr), selected(false), mask(true) { }
@@ -46,13 +49,12 @@ public:
 		switch (type) {
 		case 0:
 			model_shape = new Model("shapes/plane_face.obj");
-			translate(glm::vec3(0.0f, paras[3], 0.0f));
 			rotate(glm::vec3(0.0f, 1.0f, 0.0f), paras[0], paras[1], paras[2]);
-			
+			translate(glm::vec3(0.0f, paras[3], 0.0f));
+			//rotate(glm::vec3(0.0f, 1.0f, 0.0f), paras[0], paras[1], paras[2]);
 			break;
 		case 1:
 			model_shape = new Model("shapes/sphere_face.obj");
-			//scale(paras[3], paras[3], paras[3]);
 			translate(paras[0], paras[1], paras[2]);
 			scale(paras[3], paras[3], paras[3]);
 			break;
@@ -60,7 +62,6 @@ public:
 			model_shape = new Model("shapes/cylinder_face_x.obj");
 			translate(paras[0], paras[1], paras[2]);
 			rotate(glm::vec3(0.0f, 1.0f, 0.0f), paras[3], paras[4], paras[5]);
-			//scale(paras[6], paras[6], paras[6]);
 			scale(paras[6], paras[6], paras[6]);
 			break;
 		case 3:
@@ -72,15 +73,7 @@ public:
 		default:
 			break;
 		}
-		if (point_num > 0) {
-			model_pointclouds = new Mesh(points, indices);
-		}
-		else {
-			model_pointclouds = nullptr;
-		}
-		
 	}
-
 };
 
 #endif  // PRIMITIVE_H
