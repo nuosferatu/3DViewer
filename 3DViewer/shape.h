@@ -14,28 +14,40 @@
 #include "plane.h"
 #include <Windows.h>
 
+struct SPFN_GTInfo {
+	int id;
+	string type;
+	float para1;
+	float para2;
+	float para3;
+};
+
 class Shape {
 public:
 	vector<Primitive> instances; // 基元列表（通常是 24 个）
 	vector<Vertex> points;       // 8096 个点的坐标
+	vector<Vertex> points_highlight;
 
 	vector<unsigned int> indices;
 	Mesh *raw_points;
+	vector<SPFN_GTInfo> gt_info;
 
 
 	Shape(string paras_path,
 		  string points_path,
 		  string mask_path,
 		  string matching_path,
-		  string points_gt_path)
+		  string points_gt_path,
+		  string gtinfo_path)
 	{
 		importPoints(points_path);
 		importParas(paras_path, glm::vec3(1.0f, 0.0f, 0.0f));
 		importPointsGT(matching_path, points_gt_path, glm::vec3(1.0f, 0.65f, 0.0f));
+		importGTInfo(gtinfo_path);
 	}
 
 private:
-	void importPoints(string points_path, glm::vec3 _color = glm::vec3(1.0f, 1.0f, 1.0f)) {
+	void importPoints(string points_path, glm::vec3 _color = glm::vec3(0.8f, 0.8f, 0.8f)) {
 		// read file
 		fstream file(points_path);
 		vector<string> lines;
@@ -53,6 +65,7 @@ private:
 			s << lines[i];
 			s >> x >> y >> z;
 			points.push_back(Vertex(glm::vec3(x, y, z), _color));
+			points_highlight.push_back(Vertex(glm::vec3(x, y, z), glm::vec3(0.0f, 1.0f, 0.0f)));
 			indices.push_back(i);
 		}
 
@@ -139,7 +152,7 @@ private:
 					ins.paras.push_back(sqrtf(x)); // radius
 				}
 				// plane
-				else if (ins.type == 0) {
+				else if (ins.type == 1) {
 					s.str("");
 					s.clear();
 					s << lines[i];
@@ -157,21 +170,22 @@ private:
 					ins.center *= x;
 				}
 				// sphere
-				else if (ins.type == 1) {
-					s.str("");
-					s.clear();
-					s << lines[i];
-					s >> x >> y >> z;
-					ins.paras.push_back(x); // center
-					ins.paras.push_back(y);
-					ins.paras.push_back(z);
-					ins.center = glm::vec3(x, y, z);
+				else if (ins.type == 0) {
 					i++;
-					s.str("");
-					s.clear();
-					s << lines[i];
-					s >> x;
-					ins.paras.push_back(sqrtf(x)); // radius
+					//s.str("");
+					//s.clear();
+					//s << lines[i];
+					//s >> x >> y >> z;
+					//ins.paras.push_back(x); // center
+					//ins.paras.push_back(y);
+					//ins.paras.push_back(z);
+					//ins.center = glm::vec3(x, y, z);
+					//i++;
+					//s.str("");
+					//s.clear();
+					//s << lines[i];
+					//s >> x;
+					//ins.paras.push_back(sqrtf(x)); // radius
 				}
 
 				// number of points
@@ -197,7 +211,7 @@ private:
 
 				ins.createModel();
 				if (ins.point_num > 0) {
-					ins.model_pointclouds = new Mesh(points, ins.indices);
+					ins.model_pointclouds = new Mesh(points_highlight, ins.indices);
 				}
 				else {
 					ins.model_pointclouds = nullptr;
@@ -248,6 +262,33 @@ private:
 					instances[ins_index1].model_gt = new Mesh(instances[ins_index1].points_gt, instances[ins_index1].indices_gt);
 				}
 			}
+		}
+	}
+
+	void importGTInfo(string gtinfo_path) {
+		// read file
+		fstream paras_file(gtinfo_path);
+		string line;
+		vector<string> lines;
+		stringstream s;
+		float x, y, z;
+		int u;
+		int v;
+		string types[] = { "none", "plane", "cylinder", "cone" };
+		// read file
+		while (getline(paras_file, line)) {
+			lines.push_back(line);
+		}
+
+		// analysis shapes
+		for (unsigned int i = 0; i < lines.size(); i++) {
+			// every single instance
+			s.str("");
+			s.clear();
+			s << lines[i];
+			s >> u >> v >> x >> y >> z;
+			types[v];
+			gt_info.push_back(SPFN_GTInfo{u, types[v], x, y, z});
 		}
 	}
 };

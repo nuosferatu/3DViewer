@@ -48,15 +48,17 @@ public:
 	void createModel() {
 		switch (type) {
 		case 0:
+			//model_shape = new Model("shapes/plane_face.obj");
+			model_shape = nullptr;
+			//rotate(glm::vec3(0.0f, 1.0f, 0.0f), paras[0], paras[1], paras[2]);
+			//translate(glm::vec3(0.0f, paras[3], 0.0f));
+			//rotate(glm::vec3(0.0f, 1.0f, 0.0f), paras[0], paras[1], paras[2]);
+			break;
+		case 1:
 			model_shape = new Model("shapes/plane_face.obj");
 			rotate(glm::vec3(0.0f, 1.0f, 0.0f), paras[0], paras[1], paras[2]);
 			translate(glm::vec3(0.0f, paras[3], 0.0f));
 			//rotate(glm::vec3(0.0f, 1.0f, 0.0f), paras[0], paras[1], paras[2]);
-			break;
-		case 1:
-			model_shape = new Model("shapes/sphere_face.obj");
-			translate(paras[0], paras[1], paras[2]);
-			scale(paras[3], paras[3], paras[3]);
 			break;
 		case 2:
 			model_shape = new Model("shapes/cylinder_face_x.obj");

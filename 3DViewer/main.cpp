@@ -80,6 +80,9 @@ bool spfn_hideUnselected = false;
 bool spfn_displayGT = false;
 bool spfn_displayPred = false;
 bool spfn_displayRaw = false;
+bool spfn_displayGTInfo = false;
+bool displayFloor = true;
+bool isMeshLabStyle = false;
 
 string primitives_name[] = {
 	"plane",
@@ -95,18 +98,12 @@ int currentFileIndex = -1;
 vector<string> filelist;
 
 
-enum interactionStyle {
-	MESHLAB_STYLE,
-	PLATFORM_STYLE,
-	FPS_STYLE
-};
-interactionStyle OperationMode = PLATFORM_STYLE;
-
 
 
 Mesh *axis_mesh;
 Mesh *floor_mesh;
 Mesh *axis_degree;
+Shape *temp;
 
 void switchHighlight() {
 	// switch among all
@@ -140,7 +137,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 void processInput(GLFWwindow *window) {
 	// 摄像机移动
 	// MeshLab(0) or FPS(1)
-	switch (OperationMode)
+	switch (isMeshLabStyle)
 	{
 	case 0:
 		//if (glfwGetKey(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
@@ -189,9 +186,9 @@ void mouse_pos_callback(GLFWwindow* window, double xpos, double ypos) {
 		firstMouse = false;
 	}
 
-	switch (OperationMode)
+	switch (isMeshLabStyle)
 	{
-	case MESHLAB_STYLE:
+	case 1:
 		if (enableMouseMovement) {
 			// 计算鼠标移动量
 			float xoffset = xpos - lastX;
@@ -207,7 +204,7 @@ void mouse_pos_callback(GLFWwindow* window, double xpos, double ypos) {
 			camera.translate(xoffset, yoffset);
 		}
 		break;
-	case PLATFORM_STYLE:
+	case 0:
 		if (enableMouseMovement) {
 			// 计算鼠标移动量
 			float xoffset = xpos - lastX;
@@ -223,15 +220,15 @@ void mouse_pos_callback(GLFWwindow* window, double xpos, double ypos) {
 			camera.translate(xoffset, yoffset);
 		}
 		break;
-	case FPS_STYLE:
-		if (enableMouseMovement) {
-			// 计算鼠标移动量
-			float xoffset = xpos - lastX;
-			float yoffset = lastY - ypos;
-			// 摄像机发生变化
-			//camera.ProcessReleasedMouseMovement(xoffset, yoffset);
-		}
-		break;
+	//case FPS_STYLE:
+	//	if (enableMouseMovement) {
+	//		// 计算鼠标移动量
+	//		float xoffset = xpos - lastX;
+	//		float yoffset = lastY - ypos;
+	//		// 摄像机发生变化
+	//		//camera.ProcessReleasedMouseMovement(xoffset, yoffset);
+	//	}
+	//	break;
 	default:
 		break;
 	}
@@ -297,19 +294,15 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		break;
 
 	case GLFW_KEY_O: // 'O': 切换操作模式
-		switch ((OperationMode % 3))
+		switch (isMeshLabStyle)
 		{
-		case MESHLAB_STYLE:
-			OperationMode = PLATFORM_STYLE;
+		case 1:
+			isMeshLabStyle = false;
 			cout << "Operation Mode: " << "PLATFORM_STYLE" << endl;
 			break;
-		case PLATFORM_STYLE:
-			OperationMode = FPS_STYLE;
+		case 0:
+			isMeshLabStyle = true;
 			cout << "Operation Mode: " << "FPS_STYLE" << endl;
-			break;
-		case FPS_STYLE:
-			OperationMode = MESHLAB_STYLE;
-			cout << "Operation Mode: " << "MESHLAB_STYLE" << endl;
 			break;
 		}
 		break;
@@ -329,7 +322,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		break;
 
 	case GLFW_KEY_LEFT: // 左方向键，上一个文件
-		if (currentFileIndex < 1)
+		if (currentFileIndex == 0)
 			currentFileIndex = 0;
 		else
 			currentFileIndex--;
@@ -339,20 +332,20 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		switchHighlight();
 		break;
 	case GLFW_KEY_RIGHT: // 右方向键，下一个文件
-		if (currentFileIndex > filelist.size() - 1)
-			currentFileIndex = 0;
+		if (currentFileIndex == filelist.size() - 1)
+			currentFileIndex = filelist.size() - 1;
 		else
 			currentFileIndex++;
 		cout << "File name: " << filelist[currentFileIndex] << endl;
-		if (currentFileIndex >= shapes.size()) {
-			Shape temp("E:\\SPFN\\instances_paras\\merge_ins_paras_&_ins_points\\" + filelist[currentFileIndex] + ".txt",
+		if (currentFileIndex > shapes.size() - 1) {
+			temp = new Shape("E:\\SPFN\\instances_paras\\nnnnnnnnnnn\\" + filelist[currentFileIndex] + ".txt",
 				"E:\\SPFN\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt",
 				"E:\\SPFN\\instances_paras\\mask\\" + filelist[currentFileIndex] + ".txt",
 				"E:\\SPFN\\instances_paras\\512\\" + filelist[currentFileIndex] + "_512.txt",
-				"E:\\SPFN\\instances_paras\\matching_indices\\" + filelist[currentFileIndex] + ".txt"
-			);
-			temp.instances[0].selected = true;
-			shapes.push_back(temp);
+				"E:\\SPFN\\instances_paras\\matching_indices\\" + filelist[currentFileIndex] + ".txt",
+				"E:\\SPFN\\instances_paras\\gt\\" + filelist[currentFileIndex] + "_gt.txt");
+			temp->instances[0].selected = true;
+			shapes.push_back(*temp);
 		}
 		else {
 			shapes[currentFileIndex].instances[0].selected = true;
@@ -739,17 +732,18 @@ int main() {
 	// 加载模型
 	Model floor("floor/c.obj");
 
-	ReadFilelist(".filename_list.txt", filelist);
+	ReadFilelist(".filename_list_selected.txt", filelist);
 	currentFileIndex = 0;
 
-	Shape temp("E:\\SPFN\\instances_paras\\merge_ins_paras_&_ins_points\\" + filelist[currentFileIndex] + ".txt",
+	temp = new Shape("E:\\SPFN\\instances_paras\\nnnnnnnnnnn\\" + filelist[currentFileIndex] + ".txt",
 		"E:\\SPFN\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt",
 		"E:\\SPFN\\instances_paras\\mask\\" + filelist[currentFileIndex] + ".txt",
 		"E:\\SPFN\\instances_paras\\512\\" + filelist[currentFileIndex] + "_512.txt",
-		"E:\\SPFN\\instances_paras\\matching_indices\\" + filelist[currentFileIndex] + ".txt"
+		"E:\\SPFN\\instances_paras\\matching_indices\\" + filelist[currentFileIndex] + ".txt",
+		"E:\\SPFN\\instances_paras\\gt\\" + filelist[currentFileIndex] + "_gt.txt"
 	);
-	temp.instances[0].selected = true;
-	shapes.push_back(temp);
+	temp->instances[0].selected = true;
+	shapes.push_back(*temp);
 	cout << "File name: " << filelist[currentFileIndex] << endl;
 
 
@@ -810,7 +804,10 @@ int main() {
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glLineWidth(1.0f);
-		floor.draw(floorShader, 1);
+		if (displayFloor) {
+			floor.draw(floorShader, 1);
+		}
+		
 
 		// 世界坐标系坐标轴
 		glm::mat4 world_model_matrix = glm::mat4(1.0f);
@@ -897,37 +894,43 @@ int main() {
 			
 			// Highlight & Local axis
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			if (shapes[currentFileIndex].instances[s].mask 
-				&& shapes[currentFileIndex].instances[s].selected 
-				&& shapes[currentFileIndex].instances[s].point_num) {
-				glLineWidth(2.0f);
-				wireframeShader->setMat4("projection", proj_matrix);
-				wireframeShader->setMat4("view", view_matrix);
-				wireframeShader->setMat4("model", shapes[currentFileIndex].instances[s].model_shape->getModelMatrix());
-				wireframeShader->setBool("selected", shapes[currentFileIndex].instances[s].selected);
-				shapes[currentFileIndex].instances[s].model_shape->draw(wireframeShader, 1);
+			if (displayMode != 233) {
+				if (shapes[currentFileIndex].instances[s].mask
+					&& shapes[currentFileIndex].instances[s].selected
+					&& shapes[currentFileIndex].instances[s].point_num) {
+					glLineWidth(2.0f);
+					wireframeShader->setMat4("projection", proj_matrix);
+					wireframeShader->setMat4("view", view_matrix);
+					wireframeShader->setMat4("model", shapes[currentFileIndex].instances[s].model_shape->getModelMatrix());
+					wireframeShader->setBool("selected", shapes[currentFileIndex].instances[s].selected);
+					shapes[currentFileIndex].instances[s].model_shape->draw(wireframeShader, 1);
+				}
+				if (shapes[currentFileIndex].instances[s].mask
+					&& shapes[currentFileIndex].instances[s].selected
+					&& shapes[currentFileIndex].instances[s].point_num
+					&& enableModelAxis) {
+					glLineWidth(2.0f);
+					glm::mat4 local_model_matrix = glm::mat4(1.0f);
+					local_model_matrix = glm::translate(local_model_matrix, shapes[currentFileIndex].instances[s].center);
+					local_model_matrix = glm::scale(local_model_matrix, glm::vec3(0.2f, 0.2f, 0.2f));
+					//glm::rotate(local_model_matrix, );
+					wireframeShader->setMat4("projection", proj_matrix);
+					wireframeShader->setMat4("view", view_matrix);
+					wireframeShader->setMat4("model", local_model_matrix);
+					wireframeShader->setBool("selected", TRUE);
+					//drawAxis(&shapes[currentFileIndex].instances[s]);
+					drawAxis(proj_matrix, view_matrix, local_model_matrix);
+				}
 			}
-			if (shapes[currentFileIndex].instances[s].mask 
-				&& shapes[currentFileIndex].instances[s].selected 
-				&& shapes[currentFileIndex].instances[s].point_num 
-				&& enableModelAxis) {
-				glLineWidth(2.0f);
-				glm::mat4 local_model_matrix = glm::mat4(1.0f);
-				local_model_matrix = glm::translate(local_model_matrix, shapes[currentFileIndex].instances[s].center);
-				local_model_matrix = glm::scale(local_model_matrix, glm::vec3(0.2f, 0.2f, 0.2f));
-				//glm::rotate(local_model_matrix, );
-				wireframeShader->setMat4("projection", proj_matrix);
-				wireframeShader->setMat4("view", view_matrix);
-				wireframeShader->setMat4("model", local_model_matrix);
-				wireframeShader->setBool("selected", TRUE);
-				//drawAxis(&shapes[currentFileIndex].instances[s]);
-				drawAxis(proj_matrix, view_matrix, local_model_matrix);
-			}
+			
 	
 
 
 			
 			// Draw points
+			if (spfn_displayRaw) {
+				drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].raw_points, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 2.0f);
+			}
 			switch (spfn_displayPoints) {
 			case 0: // NONE
 				break;
@@ -935,31 +938,29 @@ int main() {
 				if (shapes[currentFileIndex].instances[s].selected 
 					&& spfn_displayPred
 					&& shapes[currentFileIndex].instances[s].point_num > 0) {
-					drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].instances[s].model_pointclouds, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 4.0f);
+					drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].instances[s].model_pointclouds, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 3.0f);
 				}
 				if (shapes[currentFileIndex].instances[s].selected 
 					&& spfn_displayGT
 					&& shapes[currentFileIndex].instances[s].points_gt.size() > 0) {
-					drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].instances[s].model_gt, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 4.0f);
+					drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].instances[s].model_gt, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 3.0f);
 				}
 				break;
 			case 2: // ALL
 				if (shapes[currentFileIndex].instances[s].point_num > 0
 					&& spfn_displayPred) {
-					drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].instances[s].model_pointclouds, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 4.0f);
+					drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].instances[s].model_pointclouds, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 3.0f);
 
 				}
 				if (shapes[currentFileIndex].instances[s].points_gt.size() > 0
 					&& spfn_displayGT) {
-					drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].instances[s].model_gt, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 4.0f);
+					drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].instances[s].model_gt, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 3.0f);
 				}
 				break;
 			default:
 				break;
 			}
-			if (spfn_displayRaw) {
-				drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].raw_points, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 4.0f);
-			}
+			
 		}
 
 
@@ -969,12 +970,16 @@ int main() {
 			ImGui::Text("WINDOW SETTINGS:");
 			ImGui::Checkbox("No move", &myui.no_move); ImGui::SameLine();
 			ImGui::Checkbox("No resize", &myui.no_resize);
+			ImGui::Text("OPERATE STYLE:");
+			ImGui::Checkbox("All directions", &isMeshLabStyle);
 			ImGui::Text("RENDERING MODE:");
 			ImGui::RadioButton("Wireframe", &displayMode, GL_LINE); ImGui::SameLine();
-			ImGui::RadioButton("Face", &displayMode, GL_FILL);
+			ImGui::RadioButton("Face", &displayMode, GL_FILL); ImGui::SameLine();
+			ImGui::RadioButton("None", &displayMode, 233);
 			ImGui::Text("DISPLAY AXES:");
 			ImGui::Checkbox("World axis", &enableWorldAxis); ImGui::SameLine();
 			ImGui::Checkbox("Model axis", &enableModelAxis);
+			ImGui::Checkbox("Floor", &displayFloor);
 			ImGui::Text("DISPLAY POINTS: ");
 			ImGui::RadioButton("None", &spfn_displayPoints, 0); ImGui::SameLine();
 			ImGui::RadioButton("Selected", &spfn_displayPoints, 1); ImGui::SameLine();
@@ -1004,19 +1009,19 @@ int main() {
 			ImGui::Text("  Paras:");
 			switch (shapes[currentFileIndex].instances[highlight].type) {
 			case 0:
+				//ImGui::Text("   - n: (%.2f, %.2f, %.2f)",
+				//	shapes[currentFileIndex].instances[highlight].paras[0],
+				//	shapes[currentFileIndex].instances[highlight].paras[1],
+				//	shapes[currentFileIndex].instances[highlight].paras[2]);
+				//ImGui::Text("   - c: %.2f",
+				//	shapes[currentFileIndex].instances[highlight].paras[3]);
+				break;
+			case 1:
 				ImGui::Text("   - n: (%.2f, %.2f, %.2f)",
 					shapes[currentFileIndex].instances[highlight].paras[0],
 					shapes[currentFileIndex].instances[highlight].paras[1],
 					shapes[currentFileIndex].instances[highlight].paras[2]);
 				ImGui::Text("   - c: %.2f",
-					shapes[currentFileIndex].instances[highlight].paras[3]);
-				break;
-			case 1:
-				ImGui::Text("   - centre: (%.2f, %.2f, %.2f)",
-					shapes[currentFileIndex].instances[highlight].paras[0],
-					shapes[currentFileIndex].instances[highlight].paras[1],
-					shapes[currentFileIndex].instances[highlight].paras[2]);
-				ImGui::Text("   - radius: %.2f",
 					shapes[currentFileIndex].instances[highlight].paras[3]);
 				break;
 			case 2:
@@ -1046,7 +1051,14 @@ int main() {
 			default:
 				break;
 			}
-			
+			ImGui::Checkbox("PARAMETERS GT", &spfn_displayGTInfo);
+			if (spfn_displayGTInfo) {
+				for (unsigned int g = 0; g < shapes[currentFileIndex].gt_info.size(); g++) {
+					SPFN_GTInfo temp = shapes[currentFileIndex].gt_info[g];
+					ImGui::Text("  %2d: %8s (%.2f, %.2f, %.2f)", temp.id, temp.type.c_str(), temp.para1, temp.para2, temp.para3);
+				}
+			}
+
 			
 			myui1.endWindow();
 		}
