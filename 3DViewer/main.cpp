@@ -83,6 +83,7 @@ bool spfn_displayGTInfo = false;
 bool displayFloor = true;
 bool isMeshLabStyle = false;
 bool displayNormalLines = true;
+bool displayNormalLinesGT = false;
 
 string primitives_name[] = {
 	"plane",
@@ -956,6 +957,12 @@ int main() {
 					&& shapes[currentFileIndex].instances[s].point_num > 0) {
 					drawInstructor(wireframeShader, shapes[currentFileIndex].instances[s].model_normal_line, 0, proj_matrix, view_matrix, raw_point_model, 1.0f, 3.0f);
 				}
+				// Draw predicted normal lines of raw point
+				if (shapes[currentFileIndex].instances[s].selected
+					&& displayNormalLinesGT
+					&& shapes[currentFileIndex].instances[s].point_num > 0) {
+					drawInstructor(wireframeShader, shapes[currentFileIndex].instances[s].model_normal_line_gt, 0, proj_matrix, view_matrix, raw_point_model, 1.0f, 3.0f);
+				}
 				break;
 			case 2: // ALL
 				if (shapes[currentFileIndex].instances[s].point_num > 0
@@ -1000,6 +1007,7 @@ int main() {
 			ImGui::Text("OTHER: ");
 			ImGui::Checkbox("Display raw point clouds", &spfn_displayRaw);
 			ImGui::Checkbox("Display normal liens of points", &displayNormalLines);
+			ImGui::Checkbox("Display normal liens of points (GT)", &displayNormalLinesGT);
 			ImGui::Checkbox("Hide unselected primitives", &spfn_hideUnselected);
 			ImGui::Checkbox("Switch among all primitives", &spfn_switchBetween);
 			myui.endWindow();

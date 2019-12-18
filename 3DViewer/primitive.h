@@ -21,10 +21,13 @@ public:
 	
 	Mesh *model_pointclouds;      // µãÔÆÄ£ÐÍ
 	
-	// verify correction of per-point-normal
+	// Verify correction of per-point-normal
 	vector<Vertex> normal_line_points;
-	Mesh *model_normal_line;  // visualize normals as trangles (actually lines)
 	vector<unsigned int> normal_line_indices;  // indices for drawing normal lines as trangle
+	Mesh *model_normal_line;  // visualize normals as trangles (actually lines)
+	vector<Vertex> normal_line_gt_points;
+	//vector<unsigned int> normal_line_gt_indices;
+	Mesh* model_normal_line_gt;
 
 	glm::vec3 center;
 
