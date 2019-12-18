@@ -18,7 +18,14 @@ public:
 	int point_num;                // 点数
 	vector<unsigned int> indices; // 点在 Shape 中的索引
 	//vector<Vertex> points;        // 点的坐标
+	
 	Mesh *model_pointclouds;      // 点云模型
+	
+	// verify correction of per-point-normal
+	vector<Vertex> normal_line_points;
+	Mesh *model_normal_line;  // visualize normals as trangles (actually lines)
+	vector<unsigned int> normal_line_indices;  // indices for drawing normal lines as trangle
+
 	glm::vec3 center;
 
 	/* 其他变量 */

@@ -40,7 +40,6 @@
 #include <math.h>
 
 
-
 /* 一些全局变量 */
 const static char* glsl_version = "#version 130";
 
@@ -83,6 +82,7 @@ bool spfn_displayRaw = false;
 bool spfn_displayGTInfo = false;
 bool displayFloor = true;
 bool isMeshLabStyle = false;
+bool displayNormalLines = true;
 
 string primitives_name[] = {
 	"plane",
@@ -340,6 +340,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		if (currentFileIndex > shapes.size() - 1) {
 			temp = new Shape("E:\\SPFN\\instances_paras\\nnnnnnnnnnn\\" + filelist[currentFileIndex] + ".txt",
 				"E:\\SPFN\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt",
+				"E:\\SPFN\\instances_paras\\normals\\" + filelist[currentFileIndex],
 				"E:\\SPFN\\instances_paras\\mask\\" + filelist[currentFileIndex] + ".txt",
 				"E:\\SPFN\\instances_paras\\512\\" + filelist[currentFileIndex] + "_512.txt",
 				"E:\\SPFN\\instances_paras\\matching_indices\\" + filelist[currentFileIndex] + ".txt",
@@ -737,6 +738,7 @@ int main() {
 
 	temp = new Shape("E:\\SPFN\\instances_paras\\nnnnnnnnnnn\\" + filelist[currentFileIndex] + ".txt",
 		"E:\\SPFN\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt",
+		"E:\\SPFN\\instances_paras\\normals\\" + filelist[currentFileIndex],
 		"E:\\SPFN\\instances_paras\\mask\\" + filelist[currentFileIndex] + ".txt",
 		"E:\\SPFN\\instances_paras\\512\\" + filelist[currentFileIndex] + "_512.txt",
 		"E:\\SPFN\\instances_paras\\matching_indices\\" + filelist[currentFileIndex] + ".txt",
@@ -745,6 +747,9 @@ int main() {
 	temp->instances[0].selected = true;
 	shapes.push_back(*temp);
 	cout << "File name: " << filelist[currentFileIndex] << endl;
+
+
+
 
 
 	// Setup Dear ImGui context
@@ -929,7 +934,7 @@ int main() {
 			
 			// Draw points
 			if (spfn_displayRaw) {
-				drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].raw_points, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 2.0f);
+				drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].raw_points, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 4.0f);
 			}
 			switch (spfn_displayPoints) {
 			case 0: // NONE
@@ -944,6 +949,12 @@ int main() {
 					&& spfn_displayGT
 					&& shapes[currentFileIndex].instances[s].points_gt.size() > 0) {
 					drawInstructor(spfnPointCloudShader, shapes[currentFileIndex].instances[s].model_gt, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 3.0f);
+				}
+				// Draw predicted normal lines of raw point
+				if (shapes[currentFileIndex].instances[s].selected
+					&& displayNormalLines
+					&& shapes[currentFileIndex].instances[s].point_num > 0) {
+					drawInstructor(wireframeShader, shapes[currentFileIndex].instances[s].model_normal_line, 0, proj_matrix, view_matrix, raw_point_model, 1.0f, 3.0f);
 				}
 				break;
 			case 2: // ALL
@@ -960,7 +971,7 @@ int main() {
 			default:
 				break;
 			}
-			
+
 		}
 
 
@@ -988,6 +999,7 @@ int main() {
 			ImGui::Checkbox("Ground-truth", &spfn_displayGT);
 			ImGui::Text("OTHER: ");
 			ImGui::Checkbox("Display raw point clouds", &spfn_displayRaw);
+			ImGui::Checkbox("Display normal liens of points", &displayNormalLines);
 			ImGui::Checkbox("Hide unselected primitives", &spfn_hideUnselected);
 			ImGui::Checkbox("Switch among all primitives", &spfn_switchBetween);
 			myui.endWindow();

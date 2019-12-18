@@ -32,15 +32,21 @@ public:
 	Mesh *raw_points;
 	vector<SPFN_GTInfo> gt_info;
 
+	// verify correction of per-point-normal
+	vector<Vertex> normal_line_points;  // save normal as a triangle with 3 points (2 same 1 new)
+	//Mesh *model_normal_line;  // visualize normals as trangles (actually lines)
+	//vector<unsigned int> normal_line_indices;  // indices for drawing normal lines as trangle
 
 	Shape(string paras_path,
 		  string points_path,
+		  string normals_path,
 		  string mask_path,
 		  string matching_path,
 		  string points_gt_path,
 		  string gtinfo_path)
 	{
 		importPoints(points_path);
+		importPointsNormal(normals_path);
 		importParas(paras_path, glm::vec3(1.0f, 0.0f, 0.0f));
 		importPointsGT(matching_path, points_gt_path, glm::vec3(1.0f, 0.65f, 0.0f));
 		importGTInfo(gtinfo_path);
@@ -70,6 +76,30 @@ private:
 		}
 
 		raw_points = new Mesh(points, indices);
+	}
+
+	// read point normal
+	void importPointsNormal(string normals_path) {
+		// read file
+		fstream file(normals_path);
+		vector<string> lines;
+		string line;
+		stringstream s;
+		float x, y, z;
+		while (getline(file, line)) {
+			lines.push_back(line);
+		}
+
+		// point normal
+		for (unsigned int i = 0; i < lines.size(); i++) {
+			s.str("");
+			s.clear();
+			s << lines[i];
+			s >> x >> y >> z;
+			normal_line_points.push_back(Vertex(glm::vec3(0.1*x+points[i].position.x, 
+				0.1*y+points[i].position.y,
+				0.1*z+points[i].position.z), glm::vec3(1.0f, 1.0f, 1.0f)));  // new point
+		}
 	}
 
 	void importParas(string paras_path, glm::vec3 _color = glm::vec3(1.0f, 1.0f, 1.0f)) {
@@ -206,7 +236,15 @@ private:
 						//cout << m << " ";
 						ins.indices.push_back(m);
 						//ins.points.push_back(Vertex(this->points[m].position, _color));
+						ins.normal_line_points.push_back(normal_line_points[m]);
+						ins.normal_line_points.push_back(points[m]);
+						ins.normal_line_points.push_back(points[m]);
+						ins.normal_line_indices.push_back(3*pp);
+						ins.normal_line_indices.push_back(3*pp+1);
+						ins.normal_line_indices.push_back(3*pp+2);
+						//pp = ins.point_num;
 					}
+					ins.model_normal_line = new Mesh(ins.normal_line_points, ins.normal_line_indices);
 				}
 
 				ins.createModel();

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <IncludePath>D:\dev\CGAL-5.0\include;D:\dev\CGAL-5.0\auxiliary\gmp\include;D:\local\boost_1_71_0;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\local\boost_1_71_0\lib64-msvc-14.1;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup />
+  <ItemGroup />
+</Project>
