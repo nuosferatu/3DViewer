@@ -30,7 +30,7 @@ inline glm::vec3 rotateVec3(glm::vec3 src, glm::vec3 dst) {
 	return glm::vec3(trans * glm::vec4(src, 1.0f));
 }
 
-inline glm::vec3 projectPlane(glm::vec3 src, glm::vec3 dst) {
+inline void projectPlane(glm::vec3&p, glm::vec3 src, glm::vec3 dst) {
 	
 	glm::mat4 trans = glm::mat4(1.0f);
 
@@ -44,8 +44,8 @@ inline glm::vec3 projectPlane(glm::vec3 src, glm::vec3 dst) {
 	glm::vec3 axis = glm::normalize(glm::cross(v_src, v_dst));
 
 
-	trans = glm::rotate(trans, angle, axis);
-	return glm::vec3(trans * glm::vec4(src, 1.0f));
+	trans = glm::rotate(trans, glm::radians(45.0f), axis);
+	p = glm::vec3(trans * glm::vec4(p, 1.0f));
 }
 
 #endif  // !__TRANSFORM_H__

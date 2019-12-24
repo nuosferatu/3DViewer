@@ -250,6 +250,7 @@ private:
 				i++;
 				ins.point_num = atoi(lines[i].c_str());
 
+				glm::mat4 trans = glm::mat4(1.0f);
 				// list of point indices
 				if (ins.point_num > 0) {
 					i++;
@@ -278,16 +279,29 @@ private:
 
 						// projective points:
 						if (ins.type == 1) {
-							glm::vec3 proj = points[m].position;
+							Vertex p(points[m].position);
+							if (pp == 0) {
+								glm::vec3 v_src = glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
+								glm::vec3 v_dst = glm::normalize(glm::vec3(ins.paras[0], ins.paras[1], ins.paras[2]));
+								float dot = v_src.x * v_dst.x + v_src.y * v_dst.y + v_src.z * v_dst.z;
+								float angle = std::acosf(dot);
+								glm::vec3 axis = glm::normalize(glm::cross(v_src, v_dst));
+								trans = glm::rotate(trans, angle, axis);
+								//trans = glm::translate(trans, glm::vec3(0.0f, -ins.paras[3], 0.0f));
+							}
+							p.position = glm::vec3(trans * glm::vec4(p.position, 1.0f));
+							p.position.y = -ins.paras[3];
+							//trans = glm::translate(trans, glm::vec3(0.0f, ins.paras[3], 0.0f));
+							p.position = glm::vec3((-trans) * glm::vec4(p.position, 1.0f));
+							
 							//proj.y = proj.y - ins.paras[3];
-							proj = rotateVec3(points[m].position, glm::vec3(ins.paras[0], ins.paras[1], ins.paras[2]));
 							
 							//proj. = 0.0f;
 							//proj.y = proj.y + ins.paras[3];
 							//proj = rotateVec3(glm::vec3(ins.paras[0], ins.paras[1], ins.paras[2]), points[m].position);
-							ins.proj_points.push_back(proj);
-							ins.proj_points.push_back(proj);
-							ins.proj_points.push_back(proj);
+							ins.proj_points.push_back(p);
+							ins.proj_points.push_back(p);
+							ins.proj_points.push_back(p);
 
 						}
 						
