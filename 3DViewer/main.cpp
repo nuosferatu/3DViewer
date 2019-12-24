@@ -84,6 +84,7 @@ bool displayFloor = true;
 bool isMeshLabStyle = false;
 bool displayNormalLines = true;
 bool displayNormalLinesGT = false;
+bool displayProjectivePoints = false;
 
 string primitives_name[] = {
 	"plane",
@@ -342,6 +343,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 			temp = new Shape("E:\\SPFN\\instances_paras\\nnnnnnnnnnn\\" + filelist[currentFileIndex] + ".txt",
 				"E:\\SPFN\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt",
 				"E:\\SPFN\\instances_paras\\normals\\" + filelist[currentFileIndex],
+				"E:\\SPFN\\instances_paras\\normals_gt\\" + filelist[currentFileIndex],
 				"E:\\SPFN\\instances_paras\\mask\\" + filelist[currentFileIndex] + ".txt",
 				"E:\\SPFN\\instances_paras\\512\\" + filelist[currentFileIndex] + "_512.txt",
 				"E:\\SPFN\\instances_paras\\matching_indices\\" + filelist[currentFileIndex] + ".txt",
@@ -740,6 +742,7 @@ int main() {
 	temp = new Shape("E:\\SPFN\\instances_paras\\nnnnnnnnnnn\\" + filelist[currentFileIndex] + ".txt",
 		"E:\\SPFN\\instances_paras\\8096_pred\\" + filelist[currentFileIndex] + ".txt",
 		"E:\\SPFN\\instances_paras\\normals\\" + filelist[currentFileIndex],
+		"E:\\SPFN\\instances_paras\\normals_gt\\" + filelist[currentFileIndex],
 		"E:\\SPFN\\instances_paras\\mask\\" + filelist[currentFileIndex] + ".txt",
 		"E:\\SPFN\\instances_paras\\512\\" + filelist[currentFileIndex] + "_512.txt",
 		"E:\\SPFN\\instances_paras\\matching_indices\\" + filelist[currentFileIndex] + ".txt",
@@ -963,6 +966,13 @@ int main() {
 					&& shapes[currentFileIndex].instances[s].point_num > 0) {
 					drawInstructor(wireframeShader, shapes[currentFileIndex].instances[s].model_normal_line_gt, 0, proj_matrix, view_matrix, raw_point_model, 1.0f, 3.0f);
 				}
+				// Draw projective points
+				if (shapes[currentFileIndex].instances[s].selected
+					&& displayProjectivePoints
+					&& shapes[currentFileIndex].instances[s].point_num > 0
+					&& shapes[currentFileIndex].instances[s].type == 1) {
+					drawInstructor(wireframeShader, shapes[currentFileIndex].instances[s].model_proj_points, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 3.0f);
+				}
 				break;
 			case 2: // ALL
 				if (shapes[currentFileIndex].instances[s].point_num > 0
@@ -1008,6 +1018,7 @@ int main() {
 			ImGui::Checkbox("Display raw point clouds", &spfn_displayRaw);
 			ImGui::Checkbox("Display normal liens of points", &displayNormalLines);
 			ImGui::Checkbox("Display normal liens of points (GT)", &displayNormalLinesGT);
+			ImGui::Checkbox("Display projective points", &displayProjectivePoints);
 			ImGui::Checkbox("Hide unselected primitives", &spfn_hideUnselected);
 			ImGui::Checkbox("Switch among all primitives", &spfn_switchBetween);
 			myui.endWindow();

@@ -153,6 +153,7 @@
     <ClInclude Include="shape.h" />
     <ClInclude Include="sphere.h" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="transform.h" />
     <ClInclude Include="transform3d.h" />
   </ItemGroup>
   <ItemGroup>

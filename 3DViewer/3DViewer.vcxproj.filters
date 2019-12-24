@@ -116,6 +116,9 @@
     <ClInclude Include="my_ui.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="transform.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="wireframe.vert">

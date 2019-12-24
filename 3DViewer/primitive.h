@@ -18,6 +18,10 @@ public:
 	int point_num;                // 点数
 	vector<unsigned int> indices; // 点在 Shape 中的索引
 	//vector<Vertex> points;        // 点的坐标
+
+
+	vector<Vertex> proj_points;   // projectIve points
+	Mesh* model_proj_points;      // 
 	
 	Mesh *model_pointclouds;      // 点云模型
 	
@@ -68,7 +72,6 @@ public:
 			model_shape = new Model("shapes/plane_face.obj");
 			rotate(glm::vec3(0.0f, 1.0f, 0.0f), paras[0], paras[1], paras[2]);
 			translate(glm::vec3(0.0f, paras[3], 0.0f));
-			//rotate(glm::vec3(0.0f, 1.0f, 0.0f), paras[0], paras[1], paras[2]);
 			break;
 		case 2:
 			model_shape = new Model("shapes/cylinder_face_x.obj");

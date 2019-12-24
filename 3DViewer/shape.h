@@ -13,6 +13,7 @@
 #include "sphere.h"
 #include "plane.h"
 #include <Windows.h>
+#include "transform.h"
 
 struct SPFN_GTInfo {
 	int id;
@@ -40,6 +41,7 @@ public:
 	Shape(string paras_path,
 		  string points_path,
 		  string normals_path,
+		  string normalsgt_path,
 		  string mask_path,
 		  string matching_path,
 		  string points_gt_path,
@@ -47,6 +49,7 @@ public:
 	{
 		importPoints(points_path);
 		importPointsNormal(normals_path);
+		importNormalsGT(normalsgt_path);
 		importParas(paras_path, glm::vec3(1.0f, 0.0f, 0.0f));
 		importPointsGT(matching_path, points_gt_path, glm::vec3(1.0f, 0.65f, 0.0f));
 		importGTInfo(gtinfo_path);
@@ -126,8 +129,6 @@ private:
 
 		}
 	}
-
-
 
 	void importParas(string paras_path, glm::vec3 _color = glm::vec3(1.0f, 1.0f, 1.0f)) {
 		// read file
@@ -273,10 +274,34 @@ private:
 						ins.normal_line_indices.push_back(3*pp+1);
 						ins.normal_line_indices.push_back(3*pp+2);
 						//pp = ins.point_num;
+
+
+						// projective points:
+						if (ins.type == 1) {
+							glm::vec3 proj = points[m].position;
+							//proj.y = proj.y - ins.paras[3];
+							proj = rotateVec3(points[m].position, glm::vec3(ins.paras[0], ins.paras[1], ins.paras[2]));
+							
+							//proj. = 0.0f;
+							//proj.y = proj.y + ins.paras[3];
+							//proj = rotateVec3(glm::vec3(ins.paras[0], ins.paras[1], ins.paras[2]), points[m].position);
+							ins.proj_points.push_back(proj);
+							ins.proj_points.push_back(proj);
+							ins.proj_points.push_back(proj);
+
+						}
+						
 					}
+
 					ins.model_normal_line = new Mesh(ins.normal_line_points, ins.normal_line_indices);
 					ins.model_normal_line_gt = new Mesh(ins.normal_line_gt_points, ins.normal_line_indices);
+					if (ins.type == 1) {
+						ins.model_proj_points = new Mesh(ins.proj_points, ins.normal_line_indices);
+					}
+
 				}
+
+				
 
 				ins.createModel();
 				if (ins.point_num > 0) {

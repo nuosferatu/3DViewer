@@ -22,6 +22,7 @@ namespace Transform3D {
 		glm::vec3 axis = glm::normalize(glm::cross(_from, _to));
 		return rotate(_from, axis, angle);
 	}
+	void inline rotate(glm::vec3 _src, float _x, float _y, float _z) { rotate(_src, glm::vec3(_x, _y, _z)); } // Ðý×ª
 };
 
 #endif // TRANSFORM3D_H
