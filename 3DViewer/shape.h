@@ -251,6 +251,8 @@ private:
 				ins.point_num = atoi(lines[i].c_str());
 
 				glm::mat4 trans = glm::mat4(1.0f);
+				glm::mat4 trans1 = glm::mat4(1.0f);
+				glm::mat4 trans2 = glm::mat4(1.0f);
 				// list of point indices
 				if (ins.point_num > 0) {
 					i++;
@@ -277,7 +279,7 @@ private:
 						//pp = ins.point_num;
 
 
-						// projective points:
+						// projective points of plane:
 						if (ins.type == 1) {
 							Vertex p(points[m].position);
 							if (pp == 0) {
@@ -287,29 +289,64 @@ private:
 								float angle = std::acosf(dot);
 								glm::vec3 axis = glm::normalize(glm::cross(v_src, v_dst));
 								trans = glm::rotate(trans, angle, axis);
-								//trans = glm::translate(trans, glm::vec3(0.0f, -ins.paras[3], 0.0f));
 							}
 							p.position = glm::vec3(trans * glm::vec4(p.position, 1.0f));
 							p.position.y = -ins.paras[3];
-							//trans = glm::translate(trans, glm::vec3(0.0f, ins.paras[3], 0.0f));
+
 							p.position = glm::vec3((-trans) * glm::vec4(p.position, 1.0f));
-							
-							//proj.y = proj.y - ins.paras[3];
-							
-							//proj. = 0.0f;
-							//proj.y = proj.y + ins.paras[3];
-							//proj = rotateVec3(glm::vec3(ins.paras[0], ins.paras[1], ins.paras[2]), points[m].position);
+
 							ins.proj_points.push_back(p);
 							ins.proj_points.push_back(p);
 							ins.proj_points.push_back(p);
 
+						}
+
+						// Projective points of cylinder
+						if (ins.type == 2) {
+
+							Vertex p(points[m].position);
+
+							if (pp == 0) {
+								// compute translate vector
+								glm::vec3 v_translate = glm::vec3(ins.paras[0], ins.paras[1], ins.paras[2]);
+								
+								// compute rotate axis & angle
+								glm::vec3 v_src = glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
+								glm::vec3 v_dst = glm::normalize(glm::vec3(ins.paras[3], ins.paras[4], ins.paras[5]));
+								float dot = v_src.x * v_dst.x + v_src.y * v_dst.y + v_src.z * v_dst.z;
+								float angle = std::acosf(dot);
+								glm::vec3 axis = glm::normalize(glm::cross(v_src, v_dst)); 
+
+								// construct transform matrix
+								trans = glm::rotate(trans, angle, axis);    // rotate
+								trans1 = glm::translate(trans1, v_translate); // translate
+							}
+
+							//p.position = glm::vec3((-trans1) * glm::vec4(p.position, 1.0f));
+							p.position.x = p.position.x - ins.paras[0];
+							p.position.y = p.position.y - ins.paras[1];
+							p.position.z = p.position.z - ins.paras[2];
+							p.position = glm::vec3(trans * glm::vec4(p.position, 1.0f));
+							glm::vec3 p_on_y = glm::vec3(0.0f, p.position.y, 0.0f);
+							glm::vec3 entend_line = glm::vec3(p.position.x-p_on_y.x, p.position.y - p_on_y.y, p.position.z - p_on_y.z);
+							entend_line = glm::normalize(entend_line);
+							p.position = p_on_y + (entend_line * ins.paras[6]);
+							p.position = glm::vec3((-trans) * glm::vec4(p.position, 1.0f));
+							//p.position = glm::vec3((trans1) * glm::vec4(p.position, 1.0f));
+							p.position.x = p.position.x + ins.paras[0];
+							p.position.y = p.position.y + ins.paras[1];
+							p.position.z = p.position.z + ins.paras[2];
+
+							ins.proj_points.push_back(p);
+							ins.proj_points.push_back(p);
+							ins.proj_points.push_back(p);
 						}
 						
 					}
 
 					ins.model_normal_line = new Mesh(ins.normal_line_points, ins.normal_line_indices);
 					ins.model_normal_line_gt = new Mesh(ins.normal_line_gt_points, ins.normal_line_indices);
-					if (ins.type == 1) {
+					if (ins.type == 1 || ins.type == 2) {
 						ins.model_proj_points = new Mesh(ins.proj_points, ins.normal_line_indices);
 					}
 

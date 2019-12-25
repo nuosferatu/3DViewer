@@ -970,7 +970,8 @@ int main() {
 				if (shapes[currentFileIndex].instances[s].selected
 					&& displayProjectivePoints
 					&& shapes[currentFileIndex].instances[s].point_num > 0
-					&& shapes[currentFileIndex].instances[s].type == 1) {
+					&& (shapes[currentFileIndex].instances[s].type == 1
+						|| shapes[currentFileIndex].instances[s].type == 2)) {
 					drawInstructor(wireframeShader, shapes[currentFileIndex].instances[s].model_proj_points, 2, proj_matrix, view_matrix, raw_point_model, 1.0f, 3.0f);
 				}
 				break;
